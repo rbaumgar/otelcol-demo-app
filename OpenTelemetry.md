@@ -17,6 +17,17 @@ This is based on OpenShift 4.9. See [Distributed tracing release notes](https://
 OpenShift distributed tracing platform Operator is based on Jaeger 1.28.
 OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.33. (Technology Preview)
 
+## OpenTelemetry and Jaeger Flow
+In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
+
+![Flow)](images/OpenTelemetryCollector.png)
+
+To make this demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
+
+More details can be found
+- [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
+- [Jaeger Componenets](https://www.jaegertracing.io/docs/1.29/architecture/#components)
+
 ## Enabling Distributed Tracing
 
 A cluster administrator has to enable the Distributed Tracing Platform and Distributed Tracing Data Collection operator once. 
