@@ -12,9 +12,10 @@ I will use the OpenShift operators for my own services.
 
 *OLD* You can use OpenShift Monitoring for your own services in addition to monitoring the cluster. This way, you do not need to use an additional monitoring solution. This helps keep monitoring centralized. Additionally, you can extend the access to the metrics of your services beyond cluster administrators. This enables developers and arbitrary users to access these metrics.
 
-This is based on OpenShift 4.9. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.9/distr_tracing/distributed-tracing-release-notes.html).
+This document is based on OpenShift 4.9. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.9/distr_tracing/distributed-tracing-release-notes.html).
 
 OpenShift distributed tracing platform Operator is based on Jaeger 1.28.
+
 OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.33. (Technology Preview)
 
 ## OpenTelemetry and Jaeger Flow
@@ -22,7 +23,7 @@ In the the following diagram I will show you how the flow will be between your a
 
 ![Flow)](images/OpenTelemetryCollector.png)
 
-To make this demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
+To make the demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
 
 More details can be found
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
@@ -124,6 +125,8 @@ Open a new browser window and go to the route url and login with your OpenShift 
 
 Create configmap and an OpenTelemetry Collector instance with the name my-otelcol.
 
+The configmap is used because the Jaeger service requires encryption. These certificates are issued as TLS web server certificates. More details can be found at [Understanding service serving certificates](https://docs.openshift.com/container-platform/4.9/security/certificates/service-serving-certificate.html)
+
 ```shell
 $ cat <<EOF |oc apply -f -
 apiVersion: v1
@@ -176,7 +179,7 @@ configmap/my-otelcol-cabundle created
 opentelemetrycollector.opentelemetry.io/my-otelcol created
 ```
 
-*star* In future version of OpenTelemetryCollector (> 0.38) it might be that the configmap and the volumes nd volumesMounts are no longer required.
+*star* In future version of OpenTelemetryCollector (> 0.38) it might be that the configmap and the volumes and volumesMounts are no longer required.
 
 When the OpenTelemetryCollector instance is up and running you can check log.
 
@@ -291,6 +294,8 @@ service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
 ```
 
+You can add an environment varaibal with the name OTELCOL_SERVER if you need to specify a different url for the OpenTelemetry Collector. Default: http://my-otelcol-collector:4317 
+
 ### Test Sample Application
 
 Check the router url with */hello* and see the hello message with the pod name. Do this multiple times.
@@ -323,6 +328,88 @@ Open one trace entry and expand it to get all the details.
 Done!
 
 If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
+
+## Using OpenTelemetry Collector as Sidecar container
+
+By default is the OpenTelemetry Collector running as a seperate pod. (mode: deployement)
+If you are interested to run it in the same pod as your application you define this in your OpenTelemtry Collector CRD, by specifing spec.mode: sidecar.
+
+```shell
+$ cat <<EOF |oc apply -f -
+apiVersion: opentelemetry.io/v1alpha1
+kind: OpenTelemetryCollector
+metadata:
+  name: my-otelcol-sidecar
+spec:
+  config: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      batch:
+
+    exporters:
+      logging:
+        loglevel: info
+
+      jaeger:
+        endpoint: my-jaeger-collector-headless.jaeger-demo.svc:14250
+        ca_file: "/etc/pki/ca-trust/source/service-ca/service-ca.crt"
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [logging,jaeger]
+  mode: sidecar
+  resources: {}
+  targetAllocator: {}
+  volumeMounts:
+  - mountPath: /etc/pki/ca-trust/source/service-ca
+    name: cabundle-volume
+  volumes:
+  - configMap:
+      name: my-otelcol-cabundle
+    name: cabundle-volume
+EOF
+opentelemetrycollector.opentelemetry.io/my-otelcol created
+```
+
+No new pod will be started!
+
+You need to add an annotation to your deployment to the pod with sidecar.opentelemetry.io/inject: "true". You need also to point the url of the OpenTelemetry Collector to the localhost (environment OTELCOL_SERVER).
+See here:
+
+```shell
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: otelcol-demo-app
+  labels:
+    app: otelcol-demo-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otelcol-demo-app
+  template:
+    metadata:
+      labels:
+        app: otelcol-demo-app
+      annotations:
+        sidecar.opentelemetry.io/inject: 'true'
+    spec:
+      containers:
+        - name: otelcol-demo-app
+          image: quay.io/rbaumgar/otelcol-demo-app-jvm
+          env:
+            - name: OTELCOL_SERVER
+              value: 'http://localhost:4317'
+...              
+```
 
 ## Remove this Demo
 

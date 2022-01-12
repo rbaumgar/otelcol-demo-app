@@ -89,6 +89,7 @@ public class TracedResource {
     @Path("hello")
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
+        //Log.info(System.getenv("OTELCOL_SERVER"));
         Log.info("hello");
         return "hello";
     }

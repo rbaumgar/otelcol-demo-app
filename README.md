@@ -61,7 +61,7 @@ When you have already an instance of Jaeger and OpenTelemetryCollector running (
 Execute in a new window:
 
 ```shell
-$ oc port-forward deployment/my-otelcol-colletor 1480:1480
+$ oc port-forward deployment/my-otelcol-collector 4317:4317
 
 ```
 
