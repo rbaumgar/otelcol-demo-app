@@ -335,11 +335,12 @@ By default is the OpenTelemetry Collector running as a seperate pod. (mode: depl
 If you are interested to run it in the same pod as your application you define this in your OpenTelemtry Collector CRD, by specifing spec.mode: sidecar.
 
 ```shell
+$ oc delete opentelemetrycollector my-otelcol
 $ cat <<EOF |oc apply -f -
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
 metadata:
-  name: my-otelcol-sidecar
+  name: my-otelcol
 spec:
   config: |
     receivers:
@@ -410,6 +411,10 @@ spec:
               value: 'http://localhost:4317'
 ...              
 ```
+
+When everything works fine, you have your application pod running with two containers in, one with your application and the other one with the OpenTelemetry Collector. In the secound one logs you should see the same messages as above including the connection to the Jaeger.
+
+Now you can test it again.
 
 ## Remove this Demo
 
