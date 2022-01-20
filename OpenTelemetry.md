@@ -1,5 +1,7 @@
 # Using OpenTelemetry and Jaeger with Your Own Services/Application
 
+![](images/OpenTelemetryJaeger.png)
+
 *By Robert Baumgartner, Red Hat Austria, Janurary 2022 (OpenShift 4.9)*
 
 In this blog I will guide you on
@@ -8,9 +10,18 @@ In this blog I will guide you on
 
 - How to display your OpenTeleemtry information on Jaeger UI.
 
-I will use the OpenShift operators for my own services.
+In this blog I will use distributed tracing to instrument my services to gather insights into my service architecture. I am using distributed tracing for monitoring, network profiling, and troubleshooting the interaction between components in modern, cloud-native, microservices-based applications.
 
-*OLD* You can use OpenShift Monitoring for your own services in addition to monitoring the cluster. This way, you do not need to use an additional monitoring solution. This helps keep monitoring centralized. Additionally, you can extend the access to the metrics of your services beyond cluster administrators. This enables developers and arbitrary users to access these metrics.
+Using distributed tracing lets you perform the following functions:
+
+- Monitor distributed transactions
+- Optimize performance and latency
+- Perform root cause analysis
+
+Red Hat OpenShift distributed tracing consists of two components:
+
+Red Hat OpenShift distributed tracing platform - This component is based on the open source Jaeger project.
+Red Hat OpenShift distributed tracing data collection - This component is based on the open source OpenTelemetry project.
 
 This document is based on OpenShift 4.9. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.9/distr_tracing/distributed-tracing-release-notes.html).
 
@@ -19,6 +30,7 @@ OpenShift distributed tracing platform Operator is based on Jaeger 1.28.
 OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.33. (Technology Preview)
 
 ## OpenTelemetry and Jaeger
+
 In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
 
 ![Flow)](images/OpenTelemetryCollector.png)
