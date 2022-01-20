@@ -18,7 +18,7 @@ OpenShift distributed tracing platform Operator is based on Jaeger 1.28.
 
 OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.33. (Technology Preview)
 
-## OpenTelemetry and Jaeger Flow
+## OpenTelemetry and Jaeger
 In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
 
 ![Flow)](images/OpenTelemetryCollector.png)
@@ -33,7 +33,7 @@ More details can be found
 
 A cluster administrator has to enable the Distributed Tracing Platform and Distributed Tracing Data Collection operator once. 
 
-As of OpenShift 4.9, this is be done easyly done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.9/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-jaeger-operator-install_install-distributed-tracing).
+As of OpenShift 4.9, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.9/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-jaeger-operator-install_install-distributed-tracing).
 
 ![operatorhub.png)](images/operatorhub.png)
 
@@ -114,7 +114,7 @@ my-jaeger-collector            ClusterIP   172.30.127.95    <none>        9411/T
 my-jaeger-collector-headless   ClusterIP   None             <none>        9411/TCP,14250/TCP,14267/TCP,14268/TCP   73m
 my-jaeger-query                ClusterIP   172.30.243.178   <none>        443/TCP,16685/TCP                        73m
 $ oc get route my-jaeger -o jsonpath='{.spec.host}'
-my-jaeger-jaeger-demo.apps.ocp4.openshift.freeddns.org
+my-jaeger-jaeger-demo.apps.rbaumgar.demo.net
 ```
 
 Open a new browser window and go to the route url and login with your OpenShift login (developer).
@@ -307,7 +307,7 @@ hello
 $ curl $URL/sayHello/demo1
 hello: demo1
 $ curl $URL/sayRemote/demo2
-hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.ocp4.openshift.freeddns.org/
+hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
 ...
 ```
 
@@ -332,7 +332,7 @@ If you want more details on how the OpenTracing is done in Quarkus go to the Git
 ## Using OpenTelemetry Collector as Sidecar container
 
 By default is the OpenTelemetry Collector running as a seperate pod. (mode: deployement)
-If you are interested to run it in the same pod as your application you define this in your OpenTelemtry Collector CRD, by specifing spec.mode: sidecar.
+If you are interested to run it in the same pod as your application you define this in your OpenTelemtry Collector CRD, by specifying spec.mode: sidecar.
 
 ```shell
 $ oc delete opentelemetrycollector my-otelcol
@@ -428,4 +428,4 @@ $ oc delete project jaeger-demo
 
 This document: 
 
-**[otelcol-demo-app/OpenTelemetry.md at master · rbaumgar/otelcol-demo-app · GitHub](https://github.com/rbaumgar/otelcol-demo-app/blob/master/OpenTelemetry.md)**
+**[Github: rbaumgar/otelcol-demo-app](https://github.com/rbaumgar/otelcol-demo-app/blob/master/OpenTelemetry.md)**
