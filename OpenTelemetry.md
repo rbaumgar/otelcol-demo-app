@@ -306,7 +306,7 @@ service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
 ```
 
-You can add an environment varaibal with the name OTELCOL_SERVER if you need to specify a different url for the OpenTelemetry Collector. Default: http://my-otelcol-collector:4317 
+You can add an environment variable with the name OTELCOL_SERVER if you need to specify a different url for the OpenTelemetry Collector. Default: http://my-otelcol-collector:4317 
 
 ### Test Sample Application
 
@@ -424,7 +424,7 @@ spec:
 ...              
 ```
 
-When everything works fine, you have your application pod running with two containers in, one with your application and the other one with the OpenTelemetry Collector. In the secound one logs you should see the same messages as above including the connection to the Jaeger.
+When everything works fine, you have your application pod running with two containers in, one with your application and the other one with the OpenTelemetry Collector. In the second one logs you should see the same messages as above including the connection to the Jaeger.
 
 Now you can test it again.
 
