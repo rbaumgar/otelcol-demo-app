@@ -49,7 +49,7 @@ As of OpenShift 4.9, this is be done easily done by using the OperatorHub on the
 
 ![operatorhub.png)](images/operatorhub.png)
 
-In this demo we do not install the OpenShift Elasticsearch Operator, because we us only in-memory tracing - no perstistance.
+In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no perstistence.
 
 Make sure you are logged in as cluster-admin:
 
@@ -343,7 +343,7 @@ If you want more details on how the OpenTracing is done in Quarkus go to the Git
 
 ## Using OpenTelemetry Collector as Sidecar container
 
-By default is the OpenTelemetry Collector running as a seperate pod. (mode: deployement)
+By default is the OpenTelemetry Collector running as a separate pod. (mode: deployment)
 If you are interested to run it in the same pod as your application you define this in your OpenTelemtry Collector CRD, by specifying spec.mode: sidecar.
 
 ```shell
