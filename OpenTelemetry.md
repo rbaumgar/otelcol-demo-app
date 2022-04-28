@@ -31,6 +31,10 @@ OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.
 
 ## OpenTelemetry and Jaeger
 
+**OpenTelemetry** is a collection of tools, APIs, and SDKs. Use it to instrument, generate, collect, and export telemetry data (metrics, logs, and traces) to help you analyze your software’s performance and behavior.
+
+**Jaeger** is a tool to monitor and troubleshoot transactions in complex distributed systems.
+
 In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
 
 ![Flow)](images/OpenTelemetryCollector.png)
@@ -39,7 +43,7 @@ To make the demo simpler I am using the AllInOne  image from Jaeger. This will i
 
 More details can be found
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
-- [Jaeger Componenets](https://www.jaegertracing.io/docs/1.29/architecture/#components)
+- [Jaeger Components](https://www.jaegertracing.io/docs/1.29/architecture/#components)
 
 ## Enabling Distributed Tracing
 
