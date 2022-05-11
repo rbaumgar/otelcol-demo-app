@@ -72,7 +72,7 @@ So the number of API calls to *hello* is **greetings**.
 ```shell
 $ mvn clean package -DskipTests
 ...
-$ podman build -f src/main/docker/Dockerfile.jvm -t quarkus/otelcol-demo-app-jvm .
+$ podman build -f src/main/docker/Dockerfile.jvm -t quay.io/rbaumgar/otelcol-demo-app-jvm .
 exec java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:/opt/agent-bond/agent-bond.jar=jmx_exporter{{9779:/opt/agent-bond/jmx_exporter_config.yml}} -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:+ExitOnOutOfMemoryError -cp . -jar /deployments/app.jar
 2020-04-17 08:15:33,649 INFO  [io.quarkus] (main) otelcol-demo-app 1.0-SNAPSHOT (running on Quarkus 1.0.0.CR1) started in 0.593s. Listening on: http://0.0.0.0:8080
 2020-04-17 08:15:33,667 INFO  [io.quarkus] (main) Profile prod activated. 
@@ -122,7 +122,7 @@ $ oc rollout status -w dc/monitor-demo
 # Run the image
 
 ```shell
-$ podman run -i --rm -p 8080:8080 quarkus/otelcol-demo-app-jvm
+$ podman run -i --rm -p 8080:8080 rbaumgar/otelcol-demo-app-jvm
 ```
 
 # Push image to registry
