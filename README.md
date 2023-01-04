@@ -92,22 +92,15 @@ You need to install Graal VM and set the correct pointer.
 $ export GRAALVM_HOME=~/graalvm-ce-java11-21.3.0/
 $ export JAVA_HOME=$GRAALVM_HOME
 $ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=[podman | docker]
-$ ls file target/otelcol-demo-app-1.0-SNAPSHOT-runner
+$ ls file target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
 
-$ target/otelcol-demo-app-1.0-SNAPSHOT-runner
+$ target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
 
-$ 
+
+```
 
 ```
 
-```
-$ oc new-build quay.io/quarkus/ubi-quarkus-native-binary-s2i:1.0 --binary --name=monitor-demo -l app=monitor-demo
-
-This build uses the new Red Hat Universal Base Image, providing foundational software needed to run most applications, while staying at a reasonable size.
-
-And then start and watch the build, which will take about a minute or two to complete:
-
-$ oc start-build monitor-demo --from-file=target/otelcol-demo-app-1.0-SNAPSHOT-runner --follow
 
 Once that's done, we'll deploy it as an OpenShift application:
 
