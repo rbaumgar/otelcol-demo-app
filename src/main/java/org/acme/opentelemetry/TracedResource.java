@@ -29,50 +29,52 @@ public class TracedResource {
     @Path("sayHello/{name}")
     @Produces(MediaType.TEXT_PLAIN)
     public String sayHello(@PathParam("name") String name) {
+        Log.info("sayhello: " + name);
 
-            Span span = Span.current();
+        Span span = Span.current();
 
-            span.setAttribute("event", name);
-            span.setAttribute("message", "this is a log message for name " + name);
+        span.setAttribute("event", name);
+        span.setAttribute("message", "this is a log message for name " + name);
 
-            String response = formatGreeting(name);
-            span.setAttribute("response", response);
-            
-            return response;
+        String response = formatGreeting(name);
+        span.setAttribute("response", response);
+        
+        return response;
     }
 
     @GET
     @Path("sayRemote/{name}")
     @Produces(MediaType.TEXT_PLAIN)
     public String sayRemote(@PathParam("name") String name) {
+        Log.info("sayRemote: " + name);
 
-            Span span = Span.current();
+        Span span = Span.current();
 
-            span.setAttribute("event", name);
-            span.setAttribute("message", "this is a log message for name " + name);
+        span.setAttribute("event", name);
+        span.setAttribute("message", "this is a log message for name " + name);
 
-            String serviceName = System.getenv("SERVICE_NAME");
-            if (serviceName == null) {
-                serviceName = uriInfo.getBaseUri().toString();
-            }
+        String serviceName = System.getenv("SERVICE_NAME");
+        if (serviceName == null) {
+            serviceName = uriInfo.getBaseUri().toString();
+        }
 
-            //Log.info("Uri: " + uriInfo.getBaseUri());
-            //Log.info(serviceName);
-            URL myURL = null;
-            try {
-                myURL = new URL(serviceName);
-            } catch (MalformedURLException e) {
-                // Auto-generated catch block
-                e.printStackTrace();
-            }
-            ResourceClient resourceClient = RestClientBuilder.newBuilder()
-                    .baseUrl(myURL)
-                    //.baseUri(uriInfo.getBaseUri())
-                    .build(ResourceClient.class);
-            String response = resourceClient.hello(name) + " from " + serviceName;
-            span.setAttribute("response", response);
-            
-            return response;
+        //Log.info("Uri: " + uriInfo.getBaseUri());
+        //Log.info(serviceName);
+        URL myURL = null;
+        try {
+            myURL = new URL(serviceName);
+        } catch (MalformedURLException e) {
+            // Auto-generated catch block
+            e.printStackTrace();
+        }
+        ResourceClient resourceClient = RestClientBuilder.newBuilder()
+                .baseUrl(myURL)
+                //.baseUri(uriInfo.getBaseUri())
+                .build(ResourceClient.class);
+        String response = resourceClient.hello(name) + " from " + serviceName;
+        span.setAttribute("response", response);
+        
+        return response;
     }
 
     private String formatGreeting(String name) {
@@ -98,9 +100,9 @@ public class TracedResource {
     @Path("hello/{name}")
     @Produces(MediaType.TEXT_PLAIN)
     public String hello(@PathParam("name") String name) {
+        Log.info("hello: " + name);
         Span span = Span.current();
         span.setAttribute("name", name);
-        Log.info("hello: " + name);
         return "hello: " + name;
     }
 

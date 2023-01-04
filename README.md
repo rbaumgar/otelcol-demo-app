@@ -55,17 +55,20 @@ $ curl localhost:8080/sayRemote/demo1
 hello: demo1 from http://localhost:8080/
 ```
 
-# Using OpenTelemetryCollector
+# Using OpenTelemetryCollector or Jaeger 1.35+
 
 When you have already an instance of Jaeger and OpenTelemetryCollector running (see [OpenTelemetry](OpenTelemetry.md)) you can expose the collector port to localhost.
 Execute in a new window:
 
 ```shell
 $ oc port-forward deployment/my-otelcol-collector 4317:4317
-
 ```
 
-So the number of API calls to *hello* is **greetings**.
+When you run Jaeger version 1.35+ you do no longer need the OpenTelemetryCollector. See [Jaeger](https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c)
+
+```shell
+$ oc port-forward svc/my-jaeger-collector 4317:4317
+```
 
 # Build an image with podman
 
@@ -73,10 +76,10 @@ So the number of API calls to *hello* is **greetings**.
 $ mvn clean package -DskipTests
 ...
 $ podman build -f src/main/docker/Dockerfile.jvm -t quay.io/rbaumgar/otelcol-demo-app-jvm .
-exec java -Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager -javaagent:/opt/agent-bond/agent-bond.jar=jmx_exporter{{9779:/opt/agent-bond/jmx_exporter_config.yml}} -XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:MinHeapFreeRatio=20 -XX:MaxHeapFreeRatio=40 -XX:+ExitOnOutOfMemoryError -cp . -jar /deployments/app.jar
-2020-04-17 08:15:33,649 INFO  [io.quarkus] (main) otelcol-demo-app 1.0-SNAPSHOT (running on Quarkus 1.0.0.CR1) started in 0.593s. Listening on: http://0.0.0.0:8080
-2020-04-17 08:15:33,667 INFO  [io.quarkus] (main) Profile prod activated. 
-2020-04-17 08:15:33,667 INFO  [io.quarkus] (main) Installed features: [cdi, resteasy, smallrye-metrics]
+STEP 1/8: FROM registry.access.redhat.com/ubi8/openjdk-11-runtime
+...
+Successfully tagged quay.io/rbaumgar/otelcol-demo-app-jvm:latest
+8f9e14fd9336b488c27c5b3dfc4dbd41222089b54824137d3cdc6f67aac66565
 ```
 
 You can also use *docker*.
