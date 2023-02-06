@@ -9,6 +9,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
@@ -16,7 +17,6 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
-
 import io.quarkus.logging.Log;
 
 @Path("/")
@@ -45,7 +45,10 @@ public class TracedResource {
     @GET
     @Path("sayRemote/{name}")
     @Produces(MediaType.TEXT_PLAIN)
-    public String sayRemote(@PathParam("name") String name) {
+    public String sayRemote(@PathParam("name") String name,
+            @Context final Request request,
+            @Context final UriInfo ui,
+            @Context UriInfo uriInfo) {
         Log.info("sayRemote: " + name);
 
         Span span = Span.current();
@@ -57,8 +60,10 @@ public class TracedResource {
         if (serviceName == null) {
             serviceName = uriInfo.getBaseUri().toString();
         }
-
-        //Log.info("Uri: " + uriInfo.getBaseUri());
+        
+        Log.info("Uri: " + uriInfo.getBaseUri());
+        uriInfo.getRequestUri().getHost();
+                
         //Log.info(serviceName);
         URL myURL = null;
         try {
@@ -67,11 +72,22 @@ public class TracedResource {
             // Auto-generated catch block
             e.printStackTrace();
         }
+
         ResourceClient resourceClient = RestClientBuilder.newBuilder()
                 .baseUrl(myURL)
                 //.baseUri(uriInfo.getBaseUri())
                 .build(ResourceClient.class);
-        String response = resourceClient.hello(name) + " from " + serviceName;
+
+        String response;
+        try {
+            response = resourceClient.hello(name) + " from " + serviceName;
+            
+        } catch (Exception e) {
+            response=e.getMessage();
+            response = response + "\n \nYou can set SERVICE_NAME in your environment with the correct URL ";
+            response = response + "e.g. https://"+ uriInfo.getRequestUri().getHost();
+        }                
+         
         span.setAttribute("response", response);
         
         return response;

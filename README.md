@@ -126,10 +126,17 @@ $ podman run -i --rm -p 8080:8080 rbaumgar/otelcol-demo-app-jvm
 Find the *image id* and push it. You might need to login at first.
 
 ```shell
-$ podman images localhost/quarkus/otelcol-demo-app-jvm
-REPOSITORY                               TAG      IMAGE ID       CREATED      SIZE
-localhost/quarkus/otelcol-demo-app-jvm   latest   0a68fa7e569f   2 days ago   108 MB
-$ podman push `podman images localhost/quarkus/otelcol-demo-app-jvm -q` docker://quay.io/rbaumgar/otelcol-demo-app-jvm
+$ podman push quay.io/rbaumgar/otelcol-demo-app-jvm
+Getting image source signatures
+Copying blob 446c899d1b6b done  
+Copying blob a60e61cb3ce5 done  
+Copying blob 302f8dece865 done  
+Copying blob 762908e901a6 skipped: already exists  
+Copying blob 371fa27c3d36 skipped: already exists  
+Copying blob ad5cedfcc311 skipped: already exists  
+Copying config 4f6eb5ee54 done  
+Writing manifest to image destination
+Storing signatures
 ```
 
 

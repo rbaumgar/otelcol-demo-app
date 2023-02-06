@@ -155,6 +155,9 @@ kind: Deployment
 metadata:
   labels:
     app: otelcol-demo-app
+    app.kubernetes.io/name: otelcol-demo-app
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.openshift.io/runtime: quarkus
   name: otelcol-demo-app
 spec:
   replicas: 1
@@ -165,6 +168,9 @@ spec:
     metadata:
       labels:
         app: otelcol-demo-app
+        app.openshift.io/runtime: quarkus
+        app.kubernetes.io/name: otelcol-demo-app
+        app.kubernetes.io/version: 1.0.0-SNAPSHOT        
     spec:
       containers:
       - image: quay.io/rbaumgar/otelcol-demo-app-jvm
@@ -176,6 +182,9 @@ kind: Service
 metadata:
   labels:
     app: otelcol-demo-app
+    app.kubernetes.io/name: otelcol-demo-app
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.openshift.io/runtime: quarkus    
   name: otelcol-demo-app
 spec:
   ports:
@@ -192,6 +201,9 @@ kind: Route
 metadata:
   labels:
     app: otelcol-demo-app
+    app.kubernetes.io/name: otelcol-demo-app
+    app.kubernetes.io/version: 1.0.0-SNAPSHOT
+    app.openshift.io/runtime: quarkus       
   name: otelcol-demo-app
 spec:
   path: /
@@ -200,6 +212,8 @@ spec:
     name: otelcol-demo-app
   port:
     targetPort: web
+  tls:
+    termination: edge    
 EOF
 deployment.apps/otelcol-demo-app created
 service/otelcol-demo-app created
@@ -213,7 +227,7 @@ You can add an environment variable with the name OTELCOL_SERVER if you need to 
 Check the router url with */hello* and see the hello message with the pod name. Do this multiple times.
 
 ```shell
-$ export URL=$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
+$ export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
 $ curl $URL/hello
 hello 
 $ curl $URL/sayHello/demo1
