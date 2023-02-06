@@ -4,7 +4,7 @@ Quarkus demo app to show using OpenTelemetry and Jaeger with Your Own Services/A
 
 Quarkus guide: [Quarkus - USING OPENTELEMETRY](https://quarkus.io/guides/opentelemetry)
 
-The application has APIs */hello*, */sayHello/text* and */sayRemote/text*
+The application has APIs */hello*, */hello/text*, */sayHello/text*, */sayRemote/text* and */prime/number*.
 
 # Interactive run
 
@@ -53,6 +53,8 @@ $ curl localhost:8080/sayHello/demo1
 hello: demo1
 $ curl localhost:8080/sayRemote/demo1
 hello: demo1 from http://localhost:8080/
+$ curl localhost:8080/prime/2797
+2797 is prime.
 ```
 
 # Using OpenTelemetryCollector or Jaeger 1.35+
@@ -95,23 +97,24 @@ $ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=[podman | 
 $ ls file target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
 
 $ target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
-
-
-```
-
 ```
 
 
 Once that's done, we'll deploy it as an OpenShift application:
 
+```shell
 $ oc new-app monitor-demo
+```
 
 and expose it to the world:
 
+```shell
 $ oc expose service monitor-demo
+```
 
 Finally, make sure it's actually done rolling out:
 
+```shell
 $ oc rollout status -w dc/monitor-demo
 ```
 
@@ -143,9 +146,10 @@ Storing signatures
 
 Quarkus guide: https://quarkus.io/guides/opentelemetry
 
-
+```shell
 $ oc apply -f src/main/openshift/my-otelcol.yaml 
 configmap/my-otelcol-cabundle created
 opentelemetrycollector.opentelemetry.io/my-otelcol created
 
 $ ./mvnw clean package -Dquarkus.kubernetes.deploy=true
+```
