@@ -1,8 +1,13 @@
+In this project you will  find two interesting guides:
+
+- [Using OpenTelemetry and Jaeger with Your Own Application](OpenTelemetry.md)
+- [Service Performance Monitoring (SPM) with Jaeger of your Own Application](ServicePerformanceMonitoring.md)
+
 # otelcol-demo-app
 
 Quarkus demo app to show using OpenTelemetry and Jaeger with Your Own Services/Application
 
-Quarkus guide: [Quarkus - USING OPENTELEMETRY](https://quarkus.io/guides/opentelemetry)
+Quarkus guide: [Quarkus - Using OpenTelemetry](https://quarkus.io/guides/opentelemetry)
 
 The application has APIs */hello*, */hello/text*, */sayHello/text*, */sayRemote/text* and */prime/number*.
 

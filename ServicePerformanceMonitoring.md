@@ -138,22 +138,23 @@ apiVersion: jaegertracing.io/v1
 kind: Jaeger
 metadata:
   name: my-jaeger
-spec: 
+spec:
   allInOne:
-    config: {}
-    metricsStorage: {}
-    options: {}
-    resources: {}
+    # image: jaegertracing/all-in-one:1.31
+    options:
+      # log-level: debug
+      # query:
+        # base-path: /jaeger
+      prometheus:
+        server-url: "https://thanos-querier.openshift-monitoring.svc:9092"
+        tls.ca: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+        # tls.key: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls.enabled: "true"
+    metricsStorage:
+      type: prometheus
   strategy: allinone
 EOF
 jaeger.jaegertracing.io/my-jaeger created
-$ oc set env deployment/my-jaeger \
-      METRICS_STORAGE_TYPE=prometheus \
-      PROMETHEUS_SERVER_URL=https://thanos-querier.openshift-monitoring.svc:9092 \
-      PROMETHEUS_TLS_CA=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
-      PROMETHEUS_TLS_KEY1=/var/run/secrets/kubernetes.io/serviceaccount/token \
-      PROMETHEUS_TLS_ENABLED=TRUE
-deployment.apps/my-jaeger updated
 ```
 
 When the Jaeger instance is up and running you can check the service and route.
@@ -417,7 +418,7 @@ Find Traces...
 
 Open one trace entry and expand it to get all the details.
 
-![Jaeger Result)](images/jaeger03.png)
+![Jaeger Result](images/jaeger03.png)
 
 Done!
 
