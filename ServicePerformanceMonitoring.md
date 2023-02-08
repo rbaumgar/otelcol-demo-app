@@ -490,8 +490,8 @@ nginx-76545df445-fj48l   1/1     Running   0          82m
 At the end we configure jaeger to use the proxy as prometheus endpoint.
 
 ```shell
-$ oc set env deployment/my-jaeger PROMETHEUS_SERVER_URL=http://nginx:9092
-deployment.apps/my-jaeger updated
+$ oc patch jaeger/my-jaeger --type='json' -p='[{"op": "replace","path": "/spec/allInOne/options/prometheus/server-url", "value":  "http://nginx:9092"}]' 
+jaeger.jaegertracing.io/my-jaeger patched
 ```
 
 ## Show Service Performance Monitoring (SPM)
