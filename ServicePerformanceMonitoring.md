@@ -1,29 +1,11 @@
-# Service Performance Monitoring (SPM)
+# Service Performance Monitoring (SPM) with Jaeger of your Own Service/Application
 
-# Using OpenTelemetry and Jaeger with Your Own Services/Application
-
-![](images/OpenTelemetryJaeger.png)
+![](images/jaeger04.png)
 
 *By Robert Baumgartner, Red Hat Austria, February 2023 (OpenShift 4.12)*
 
-In this blog I will guide you on
-
-- How to use OpenTelemetry with a Quarkus application.
-
-- How to display your OpenTeleemtry information on Jaeger UI.
-
-In this blog I will use distributed tracing to instrument my services to gather insights into my service architecture. I am using distributed tracing for monitoring, network profiling, and troubleshooting the interaction between components in modern, cloud-native, microservices-based applications.
-
-Using distributed tracing lets you perform the following functions:
-
-- Monitor distributed transactions
-- Optimize performance and latency
-- Perform root cause analysis
-
-Red Hat OpenShift distributed tracing consists of two components:
-
-Red Hat OpenShift distributed tracing platform - This component is based on the open source Jaeger project.
-Red Hat OpenShift distributed tracing data collection - This component is based on the open source OpenTelemetry project.
+In this blog I will guide you on how to use service performance monitoring (spm) with jaeger.
+It should work with any appliaction that is working with OpenTelemetry.
 
 This document is based on OpenShift 4.12. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.12/distr_tracing/distributed-tracing-release-notes.html).
 
@@ -57,7 +39,7 @@ As of OpenShift 4.12, this is be done easily done by using the OperatorHub on th
 
 In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no perstistence.
 
-Make sure you are logged in as cluster-admin:
+Make sure you are logged in as cluster-admin!
 
 
 After a short time, you can check that the operator pods were created and running and the CRDs are created:
@@ -116,7 +98,7 @@ thanos-ruler-user-workload-1           3/3     Running   0          10h
 
 ## Create a New Project
 
-Create a new project (for example jaeger-demo) and give a normal user (such as developer) admin rights onto the project. Add the role user-workload-monitoring-config-edit to the user:
+Create a new project (for example jaeger-demo) and give a normal user (such as developer) admin rights onto the project:
 
 ```shell
 $ oc new-project jaeger-demo
@@ -130,14 +112,8 @@ to build a new example application in Ruby. Or use kubectl to deploy a simple Ku
 
     kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
 $ oc policy add-role-to-user admin developer -n jaeger-demo 
-clusterrole.rbac.authorization.k8s.io/admin added: "developer"
-$ oc -n openshift-user-workload-monitoring adm policy add-role-to-user \
-    user-workload-monitoring-config-edit developer \
-    --role-namespace openshift-user-workload-monitoring
-$ SECRET=`oc get secret -n openshift-user-workload-monitoring | grep  prometheus-user-workload-token | head -n 1 | awk '{print $1 }'`    
+clusterrole.rbac.authorization.k8s.io/admin added: "developer"  
 ```
-
-The secret is required later.
 
 ## Login as the Normal User
 
@@ -155,9 +131,9 @@ Using project "jaeger-demo".
 
 ## Create Jaeger
 
-Create a simple Jaeger instance with the name my-jager
+Create a simple Jaeger instance with the name my-jager and add some environment variables to the deployment.
 ```shell
-$ cat <<EOF |oc apply -f -
+$ cat <<EOF | oc apply -f -
 apiVersion: jaegertracing.io/v1
 kind: Jaeger
 metadata:
@@ -171,6 +147,13 @@ spec:
   strategy: allinone
 EOF
 jaeger.jaegertracing.io/my-jaeger created
+$ oc set env deployment/my-jaeger \
+      METRICS_STORAGE_TYPE=prometheus \
+      PROMETHEUS_SERVER_URL=https://thanos-querier.openshift-monitoring.svc:9092 \
+      PROMETHEUS_TLS_CA=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt \
+      PROMETHEUS_TLS_KEY1=/var/run/secrets/kubernetes.io/serviceaccount/token \
+      PROMETHEUS_TLS_ENABLED=TRUE
+deployment.apps/my-jaeger updated
 ```
 
 When the Jaeger instance is up and running you can check the service and route.
@@ -281,8 +264,6 @@ $ oc logs deployment/my-otelcol-collector
 2023-02-01T06:50:32.743Z        info    jaegerexporter@v0.63.0/exporter.go:185  State of the connection with the Jaeger Collector backend     {"kind": "exporter", "data_type": "traces", "name": "jaeger", "state": "READY"}
 ```
 
-Very important is the second line ("Serving Prometheus metrics") which shows that Promethes is available at port 8888. In this example it can be access at "curl my-otelcol-collector-monitoring:8888/metrics" from within the collector pod.
-
 Very important is the last line ("State of connection...") which shows that the collector is connected to the Jaeger instance.
 If this is not the case, you have to update the spec.config.exports.jaeger.endpoint value in your OpenTelemetry Collector instance. Should be <jager-collector-headless>.<jaeger-namespace>.svc:14250.
 
@@ -290,6 +271,15 @@ Can be done by:
 
 ```shell
 $ oc edit opentelemetrycollector my-otelcol
+```
+
+You can check that the prometheus port is available at port 8889.
+
+```shell
+$ oc get svc -l app.kubernetes.io/name=my-otelcol-collector
+NAME                            TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                                                    AGE
+my-otelcol-collector            ClusterIP   172.30.131.109   <none>        8889/TCP,14278/TCP,4317/TCP,4318/TCP,55681/TCP,65535/TCP   4d2h
+my-otelcol-collector-headless   ClusterIP   None             <none>        8889/TCP,14278/TCP,4317/TCP,4318/TCP,55681/TCP,65535/TCP   4d2h
 ```
 
 ## Setting up Metrics Collection
@@ -322,51 +312,11 @@ otelcol-monitor   42s
 
 :star: The *matchLabels* must be the same as it is defined at monitoring service of The OpenTelemetry Collector!
 
-## Accessing the Metrics of Your Service
-
-Once you have enabled monitoring your own services, deployed a service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
-
-To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**.
-     
-     :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
-
-Use the "Custom query" (PromQL) interface to run queries for your services.
-Enter "otelcol" and ENTER you will get a list of all available values...
-
-Two metric names will be created:
-
-calls_total
-Type: counter
-Description: counts the total number of spans, including error spans. Call counts are differentiated from errors via the status_code label. Errors are identified as any time series with the label status_code = "STATUS_CODE_ERROR".
-latency
-Type: histogram
-Description: a histogram of span latencies. Under the hood, Prometheus histograms will create a number of time series:
-latency_count: The total number of data points across all buckets in the histogram.
-latency_sum: The sum of all data point values.
-latency_bucket: A collection of n time series (where n is the number of latency buckets) for each latency bucket identified by an le (less than or equal to) label. The latency_bucket counter with lowest le and le >= span latency will be incremented for each span.
-The following formula aims to provide some guidance on the number of new time series created:
-
-Copy
-num_status_codes * num_span_kinds * (1 + num_latency_buckets) * num_operations
-
-Where:
-  num_status_codes = 3 max (typically 2: ok/error)
-  num_span_kinds = 6 max (typically 2: client/server)
-  num_latency_buckets = 17 default
-Plugging those numbers in, assuming default configuration:
-
-Copy
-max = 324 * num_operations
-typical = 72 * num_operations
-
-You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
-
-Thanos Querier can be reached at: https://thanos-querier-openshift-monitoring.apps.your.cluster/graph
-
-If you are just interested in exposing application metrics to the dashboard, you can stop here.
-
-
 ## Sample Application
+
+You can use any application which is using OpenTelemetry. You have to make sure that your application is sending the OpenTelemetry data to http://my-otelcol-collector:4317!
+
+If you have no appliaction, continue and deploy the sample appliaction. Otherwise go to the next chapter.
 
 ### Deploy a Sample Application
 
@@ -438,7 +388,7 @@ service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
 ```
 
-You can add an environment variable with the name OTELCOL_SERVER if you need to specify a different url for the OpenTelemetry Collector. Default: http://my-otelcol-collector:4317 
+The environment variable with the name OTELCOL_SERVER specified to point to the right OpenTelemetry Collector: http://my-otelcol-collector:4317 
 
 ### Test Sample Application
 
@@ -473,9 +423,94 @@ Done!
 
 If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
 
+## Accessing the Metrics of Your Service
+
+Once you have enabled monitoring your own services, deployed a service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
+
+To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**.
+     
+:star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
+
+Use the "Custom query" (PromQL) interface to run queries for your services.
+Enter "latency" and ENTER you will get a list of all available values...
+
+Following metric names will be created:
+
+Type: histogram
+
+Description: a histogram of span latencies. Under the hood, Prometheus histograms will create a number of time series:
+- latency_count: The total number of data points across all buckets in the histogram.
+- latency_sum: The sum of all data point values.
+- latency_bucket: A collection of n time series (where n is the number of latency buckets) for each latency bucket identified by an le (less than or equal to) label. The latency_bucket counter with lowest le and le >= span latency will be incremented for each span.
+
+Here is an example
+
+![Observe](images/observe01.png)
+
+You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
+
+Thanos Querier can be reached at: https://thanos-querier-openshift-monitoring.apps.your.cluster/graph
+
+If you are just interested in exposing application metrics to the dashboard, you can stop here.
+
+## Workaround
+
+When you want to use the Thanos-Querier in the OpenShift User Workload Monitoring you have to make some additinial changes to get access to the prometheus data of your project.
+
+- you have to present a authentication bearer to get access.
+- you need to add "namespace=" as query parameter. The bearer has to have at least view rights on the namespace.
+
+The newly SPM feature of Jaeger does not provide paramaters to set those requirments.
+Two feature enhancment are created
+[spm additional query parameter required for prometheus](https://github.com/jaegertracing/jaeger/issues/4219)
+[spm bearer token required for prometheus](https://github.com/jaegertracing/jaeger/issues/4219)
+So I decided to create a nginx reverse proxy with this feature.
+
+Deploy the nginx:
+
+```shell
+$ NAMESPACE=`oc project -q`
+$ BEARER=`oc whoami -t`
+$ sed "s/<BEARER>/$BEARER/g" nginx/configmap.yaml | sed "s/<NAMESPACE>/$NAMESPACE/g" | oc apply -f -
+configmap/nginx created
+$ oc apply -f nginx/deployment.yaml
+deployment.apps/nginx created
+$ oc apply -f nginx/service.yaml
+service/nginx created
+```
+Check that the nxinx pod is up and running
+
+```shell
+$ oc get pod -l app=nginx
+NAME                     READY   STATUS    RESTARTS   AGE
+nginx-76545df445-fj48l   1/1     Running   0          82m
+```
+
+At the end we configure jaeger to use the proxy as prometheus endpoint.
+
+```shell
+$ oc set env deployment/my-jaeger PROMETHEUS_SERVER_URL=http://nginx:9092
+deployment.apps/my-jaeger updated
+```
+
+## Show Service Performance Monitoring (SPM)
+
+If you have not created some testdata now is the right time...
+
+Go to your Jaeger UI, select the Monitor tab, and select the right service (my-service)
+
+![SPM at work](images/jaeger04.png)
+
+Done!
+
+The only thing you have to keep in mind is that this feature is under development!!!
+But it is very interesting what's coming.
+
 ## Remove this Demo
 
 ```shell
+$ oc delete all nginx
+$ oc delete servicemonitor otelcol-monitor
 $ oc delete deployment,svc,route otelcol-demo-app
 $ oc delete opentelemetrycollector my-otelcol
 $ oc delete jaeger my-jaeger
