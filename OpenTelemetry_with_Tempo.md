@@ -265,9 +265,11 @@ EOF
 deployment.apps/otelcol-demo-app created
 service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
+$ oc set env deployment/otelcol-demo-app OTELCOL_SERVER=http://my-otelcol-tempo-collector:4317 SERVICE_NAME=https://`c get route otelcol-demo-app -o jsonpath='{.spec.host}'`
+deployment.apps/otelcol-demo-app updated
 ```
 
-You can add an environment variable with the name OTELCOL_SERVER if you need to specify a different url for the OpenTelemetry Collector. Default: http://my-jaeger-collector:4317 
+You need to add an environment variable with the name OTELCOL_SERVER to specify a different url for the OpenTelemetry Collector.
 
 ### Test Sample Application
 
@@ -292,7 +294,10 @@ Find Traces...
 
 ![Tempo Result)](images/Tempo01.png)
 
-*star* The service name is specified in the application.properties (quarkus.application.name) of the demo app.
+You can select some details on the query. e.g.
+- Service Name: you can select the the service name which specified in the application.properties (quarkus.application.name) of the demo app.
+- Tags: you can select the name of the trace. E.g. name="/sayRemote/{name}" in my demo application.
+- Min/Max Duration: select only traces which takes very log, e.g. min = 500ms
 
 Open one trace entry and expand it to get all the details.
 
@@ -301,7 +306,6 @@ Open one trace entry and expand it to get all the details.
 Done!
 
 If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry](https://github.com/rbaumgar/otelcol-demo-app). 
-
 
 ## Remove this Demo
 
