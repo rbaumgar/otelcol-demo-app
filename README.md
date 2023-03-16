@@ -1,6 +1,7 @@
 In this project you will  find two interesting guides:
 
 - [Using OpenTelemetry and Jaeger with Your Own Application](OpenTelemetry.md)
+- [Using OpenTelemetry and Grafana Tempo with Your Own Services/Application](OpenTelemetry_with_Tempo.md)
 - [Service Performance Monitoring (SPM) with Jaeger of your Own Application](ServicePerformanceMonitoring.md)
 
 # otelcol-demo-app

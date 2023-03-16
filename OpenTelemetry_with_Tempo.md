@@ -32,7 +32,7 @@ OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.
 
 In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Grafana Tempo.
 
-![Flow)](images/OpenTelemetryTempo.png)
+![Flow](images/OpenTelemetryTempo.png)
 
 To make the demo simpler I am using **Grafana Cloud**. Grafana Cloud is the open and composable observability platform that brings together metrics, logs, and traces with Grafana visualizations. Built for cloud native environments and powered by the best open source observability software – including Prometheus, Grafana Mimir, Grafana Loki, and Grafana Tempo – Grafana Cloud lets you focus on enabling observability, without the overhead of building, installing, maintaining, and scaling your observability stack.
 
@@ -40,7 +40,7 @@ More details can be found
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
 - [Grafana Cloud](https://grafana.com/products/cloud/)
 
-## Grafana Cloud User
+## Create Grafana Cloud User
 
 For using the Grafana Cloud you can create a free user. This ** Free Forever Cloud** user is limited. But for test and demo purposes this is fine. Also I do not have any internal data so I can use th cloud.
 
@@ -60,13 +60,13 @@ A cluster administrator has to enable the Distributed Tracing Platform operator 
 
 As of OpenShift 4.12, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.12/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-install-otel-operator_install-distributed-tracing).
 
-![operatorhub.png)](images/operatorhub.png)
+![operatorhub.png](images/operatorhub.png)
 
 In this demo we do need only the **OpenShift distributed tracing data collection Operator**.
 
 Make sure you are logged in as cluster-admin.
 
-After a short time, you can check that the operator pod is created and running and the CRDs is created:
+After a short time, you can check that the operator pod is created and running and the CRD is created:
 
 ```shell
 $ oc get pod -n openshift-operators|grep opentelemetry
@@ -292,7 +292,7 @@ Click on Explore.
 Select as Query type Search and Run Query.
 Find Traces...
 
-![Tempo Result)](images/Tempo01.png)
+![Tempo Result](images/Tempo01.png)
 
 You can select some details on the query. e.g.
 - Service Name: you can select the the service name which specified in the application.properties (quarkus.application.name) of the demo app.
@@ -301,7 +301,7 @@ You can select some details on the query. e.g.
 
 Open one trace entry and expand it to get all the details.
 
-![Tempo Trace)](images/Tempo02.png)
+![Tempo Trace](images/Tempo02.png)
 
 Done!
 
