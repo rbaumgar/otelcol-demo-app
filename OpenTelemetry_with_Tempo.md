@@ -1,6 +1,5 @@
 # Using OpenTelemetry and Grafana Tempo with Your Own Services/Application
 
-!!! New IMAGE !!!
 ![](images/OpenTelemetryJaeger.png)
 
 *By Robert Baumgartner, Red Hat Austria, March 2023 (OpenShift 4.12, OpenShift distributed tracing data collection 0.63)*
@@ -92,7 +91,7 @@ You can add applications to this project with the 'new-app' command. For example
 to build a new example application in Ruby. Or use kubectl to deploy a simple Kubernetes application:
 
     kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
-$ oc policy add-role-to-user admin developer -n jaeger-demo 
+$ oc policy add-role-to-user admin developer -n tempo-demo 
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
 ```
 
@@ -156,43 +155,31 @@ opentelemetrycollector.opentelemetry.io/my-otelcol-tempo created
 When the OpenTelemetryCollector instance is up and running you can check log.
 
 ```shell
-$ oc logs deployment/my-otelcol-collector
-2022-01-03T14:57:21.117Z        info    service/collector.go:303        Starting otelcol...     {"Version": "v0.33.0", "NumCPU": 4}
-2022-01-03T14:57:21.117Z        info    service/collector.go:242        Loading configuration...
-2022-01-03T14:57:21.118Z        info    service/collector.go:258        Applying configuration...
-2022-01-03T14:57:21.119Z        info    builder/exporters_builder.go:264        Exporter was built.     {"kind": "exporter", "name": "logging"}
-2022-01-03T14:57:21.121Z        info    builder/exporters_builder.go:264        Exporter was built.     {"kind": "exporter", "name": "jaeger"}
-2022-01-03T14:57:21.121Z        info    builder/pipelines_builder.go:214        Pipeline was built.     {"pipeline_name": "traces", "pipeline_datatype": "traces"}
-2022-01-03T14:57:21.121Z        info    builder/receivers_builder.go:227        Receiver was built.     {"kind": "receiver", "name": "otlp", "datatype": "traces"}
-2022-01-03T14:57:21.121Z        info    service/service.go:143  Starting extensions...
-2022-01-03T14:57:21.121Z        info    service/service.go:188  Starting exporters...
-2022-01-03T14:57:21.121Z        info    builder/exporters_builder.go:93 Exporter is starting... {"kind": "exporter", "name": "logging"}
-2022-01-03T14:57:21.121Z        info    builder/exporters_builder.go:98 Exporter started.       {"kind": "exporter", "name": "logging"}
-2022-01-03T14:57:21.121Z        info    builder/exporters_builder.go:93 Exporter is starting... {"kind": "exporter", "name": "jaeger"}
-2022-01-03T14:57:21.122Z        info    jaegerexporter/exporter.go:186  State of the connection with the Jaeger Collector backend{"kind": "exporter", "name": "jaeger", "state": "CONNECTING"}
-2022-01-03T14:57:21.123Z        info    builder/exporters_builder.go:98 Exporter started.       {"kind": "exporter", "name": "jaeger"}
-2022-01-03T14:57:21.123Z        info    service/service.go:193  Starting processors...
-2022-01-03T14:57:21.123Z        info    builder/pipelines_builder.go:52 Pipeline is starting... {"pipeline_name": "traces", "pipeline_datatype": "traces"}
-2022-01-03T14:57:21.123Z        info    builder/pipelines_builder.go:63 Pipeline is started.    {"pipeline_name": "traces", "pipeline_datatype": "traces"}
-2022-01-03T14:57:21.123Z        info    service/service.go:198  Starting receivers...
-2022-01-03T14:57:21.123Z        info    builder/receivers_builder.go:71 Receiver is starting... {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    otlpreceiver/otlp.go:75 Starting GRPC server on endpoint 0.0.0.0:4317   {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    otlpreceiver/otlp.go:137        Setting up a second GRPC listener on legacy endpoint 0.0.0.0:55680       {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    otlpreceiver/otlp.go:75 Starting GRPC server on endpoint 0.0.0.0:55680  {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    otlpreceiver/otlp.go:93 Starting HTTP server on endpoint 0.0.0.0:4318   {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    otlpreceiver/otlp.go:159        Setting up a second HTTP listener on legacy endpoint 0.0.0.0:55681       {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    otlpreceiver/otlp.go:93 Starting HTTP server on endpoint 0.0.0.0:55681  {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    builder/receivers_builder.go:76 Receiver started.       {"kind": "receiver", "name": "otlp"}
-2022-01-03T14:57:21.123Z        info    service/collector.go:206        Setting up own telemetry...
-2022-01-03T14:57:21.127Z        info    service/telemetry.go:99 Serving Prometheus metrics      {"address": ":8888", "level": 0, "service.instance.id": "930be080-492b-432b-b5c1-1a6cc0f1b707"}
-2022-01-03T14:57:21.127Z        info    service/collector.go:218        Everything is ready. Begin running and processing data.
-2022-01-03T14:57:22.123Z        info    jaegerexporter/exporter.go:186  State of the connection with the Jaeger Collector backend{"kind": "exporter", "name": "jaeger", "state": "READY"}
+$ oc logs deployment/my-otelcol-tmpo-collector
+2023-03-16T11:04:31.454Z	info	service/telemetry.go:110	Setting up own telemetry...
+2023-03-16T11:04:31.454Z	info	service/telemetry.go:140	Serving Prometheus metrics	{"address": ":8888", "level": "basic"}
+2023-03-16T11:04:31.454Z	info	components/components.go:30	In development component. May change in the future.	{"kind": "exporter", "data_type": "traces", "name": "logging", "stability": "in development"}
+2023-03-16T11:04:31.454Z	warn	loggingexporter@v0.63.1/factory.go:110	'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.	{"kind": "exporter", "data_type": "traces", "name": "logging", "loglevel": "info", "equivalent verbosity level": "normal"}
+2023-03-16T11:04:31.455Z	info	service/service.go:89	Starting otelcol...	{"Version": "0.63.1", "NumCPU": 4}
+2023-03-16T11:04:31.455Z	info	extensions/extensions.go:42	Starting extensions...
+2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:74	Starting exporters...
+2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:78	Exporter is starting...	{"kind": "exporter", "data_type": "traces", "name": "logging"}
+2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:82	Exporter started.	{"kind": "exporter", "data_type": "traces", "name": "logging"}
+2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:78	Exporter is starting...	{"kind": "exporter", "data_type": "traces", "name": "otlp"}
+2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:82	Exporter started.	{"kind": "exporter", "data_type": "traces", "name": "otlp"}
+2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:86	Starting processors...
+2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:90	Processor is starting...	{"kind": "processor", "name": "batch", "pipeline": "traces"}
+2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:94	Processor started.	{"kind": "processor", "name": "batch", "pipeline": "traces"}
+2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:98	Starting receivers...
+2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:102	Receiver is starting...	{"kind": "receiver", "name": "otlp", "pipeline": "traces"}
+2023-03-16T11:04:31.456Z	info	otlpreceiver/otlp.go:71	Starting GRPC server	{"kind": "receiver", "name": "otlp", "pipeline": "traces", "endpoint": "0.0.0.0:4317"}
+2023-03-16T11:04:31.457Z	info	otlpreceiver/otlp.go:89	Starting HTTP server	{"kind": "receiver", "name": "otlp", "pipeline": "traces", "endpoint": "0.0.0.0:4318"}
+2023-03-16T11:04:31.457Z	info	pipelines/pipelines.go:106	Receiver started.	{"kind": "receiver", "name": "otlp", "pipeline": "traces"}
+2023-03-16T11:04:31.457Z	info	service/service.go:106	Everything is ready. Begin running and processing data.
+
 ```
 
-Very important is the last line ("State of connection...") which shows that the collector is connected to the Jager instance.
-If this is not the case, you have to update the spec.config.exports.jaeger.endpoint value in your OpenTelemetry Collector instance. Should be <jager-collector-headless>.<jaeger-namespace>.svc:14250.
-
-Can be done by:
+You can update the collector by:
 
 ```shell
 $ oc edit opentelemetrycollector my-otelcol-tempo
@@ -297,23 +284,23 @@ hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
 ...
 ```
 
-Go to Jager URL.
-Reload by pressing F5.
-Under Service select my-service. 
+Go to Grafana Cloud URL.
+Launch Grafana.
+Click on Explore. 
+Select as Query type Search and Run Query.
 Find Traces...
 
-![Jaeger Find)](images/jaeger02.png)
+![Tempo Result)](images/Tempo01.png)
 
 *star* The service name is specified in the application.properties (quarkus.application.name) of the demo app.
-*star* The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-jaeger-collector:4317).
 
 Open one trace entry and expand it to get all the details.
 
-![Jaeger Result)](images/jaeger03.png)
+![Tempo Trace)](images/Tempo02.png)
 
 Done!
 
-If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
+If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry](https://github.com/rbaumgar/otelcol-demo-app). 
 
 
 ## Remove this Demo
@@ -326,4 +313,4 @@ $ oc delete project jaeger-demo
 
 This document: 
 
-**[Github: rbaumgar/otelcol-demo-app](https://github.com/rbaumgar/otelcol-demo-app/blob/master/OpenTelemetry.md)**
+**[Github: rbaumgar/otelcol-demo-app](https://github.com/rbaumgar/otelcol-demo-app/blob/master/OpenTelemetry_with_Tempo.md)**
