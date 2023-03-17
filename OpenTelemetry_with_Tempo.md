@@ -115,7 +115,7 @@ Using project "tempo-demo".
 Create configmap and an OpenTelemetry Collector instance with the name my-otelcol.
 
 ```shell
-$ export TEMPO_TOKEN=`echo -n "$TEMPO_USER:$TEMPO_APIKEY" | base64`
+$ export TEMPO_TOKEN=`echo -n "$TEMPO_USER:$TEMPO_APIKEY" | base64 -w 0`
 $ cat <<EOF |oc apply -f -
 apiVersion: opentelemetry.io/v1alpha1
 kind: OpenTelemetryCollector
