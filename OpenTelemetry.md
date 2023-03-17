@@ -244,8 +244,9 @@ Find Traces...
 
 ![Jaeger Find)](images/jaeger02.png)
 
-*star* The service name is specified in the application.properties (quarkus.application.name) of the demo app.
-*star* The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-jaeger-collector:4317).
+:star: The service name is specified in the application.properties (quarkus.application.name) of the demo app.
+
+:star: The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-jaeger-collector:4317).
 
 Open one trace entry and expand it to get all the details.
 

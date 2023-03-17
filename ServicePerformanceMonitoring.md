@@ -26,6 +26,7 @@ In the the following diagram I will show you how the flow will be between your a
 To make the demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
 
 More details can be found
+
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
 - [Jaeger Components](https://www.jaegertracing.io/docs/1.29/architecture/#components)
 
@@ -37,10 +38,9 @@ As of OpenShift 4.12, this is be done easily done by using the OperatorHub on th
 
 ![operatorhub.png)](images/operatorhub.png)
 
-In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no perstistence.
+In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no persistence.
 
 Make sure you are logged in as cluster-admin!
-
 
 After a short time, you can check that the operator pods were created and running and the CRDs are created:
 
@@ -49,10 +49,10 @@ $ oc get pod -n openshift-distributed-tracing|grep jaeger
 jaeger-operator-bc65549bd-hch9v                              1/1     Running   0             10d
 $ oc get pod -n openshift-operators|grep opentelemetry
 opentelemetry-operator-controller-manager-69f7f56598-nsr5h   2/2     Running   0             10d
-$ oc get crd jaegers.jaegertracing.io 
+$ oc get crd jaegers 
 NAME                       CREATED AT
 jaegers.jaegertracing.io   2021-12-08T15:51:29Z
-$ oc get crd opentelemetrycollectors.opentelemetry.io 
+$ oc get crd opentelemetrycollectors
 NAME                                       CREATED AT
 opentelemetrycollectors.opentelemetry.io   2021-12-15T07:57:38Z
 ```
@@ -131,7 +131,8 @@ Using project "jaeger-demo".
 
 ## Create Jaeger
 
-Create a simple Jaeger instance with the name my-jager and add some environment variables to the deployment.
+Create a simple Jaeger instance with the name my-jaeger and add some environment variables to the deployment.
+
 ```shell
 $ cat <<EOF | oc apply -f -
 apiVersion: jaegertracing.io/v1
@@ -266,7 +267,7 @@ $ oc logs deployment/my-otelcol-collector
 ```
 
 Very important is the last line ("State of connection...") which shows that the collector is connected to the Jaeger instance.
-If this is not the case, you have to update the spec.config.exports.jaeger.endpoint value in your OpenTelemetry Collector instance. Should be <jager-collector-headless>.<jaeger-namespace>.svc:14250.
+If this is not the case, you have to update the spec.config.exports.jaeger.endpoint value in your OpenTelemetry Collector instance. Should be <jaeger-collector-headless>.<jaeger-namespace>.svc:14250.
 
 Can be done by:
 
@@ -274,7 +275,7 @@ Can be done by:
 $ oc edit opentelemetrycollector my-otelcol
 ```
 
-You can check that the prometheus port is available at port 8889.
+You can check that the Prometheus port is available at port 8889.
 
 ```shell
 $ oc get svc -l app.kubernetes.io/name=my-otelcol-collector
@@ -317,7 +318,7 @@ otelcol-monitor   42s
 
 You can use any application which is using OpenTelemetry. You have to make sure that your application is sending the OpenTelemetry data to http://my-otelcol-collector:4317!
 
-If you have no appliaction, continue and deploy the sample appliaction. Otherwise go to the next chapter.
+If you have no application, continue and deploy the sample application. Otherwise go to the next chapter.
 
 ### Deploy a Sample Application
 
@@ -387,9 +388,11 @@ EOF
 deployment.apps/otelcol-demo-app created
 service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
+$ oc set env deployment/otelcol-demo-app SERVICE_NAME=http://`oc get route otelcol-demo-app -o jsonpath='{.spec.host}'`
+deployment.apps/otelcol-demo-app updated
 ```
 
-The environment variable with the name OTELCOL_SERVER specified to point to the right OpenTelemetry Collector: http://my-otelcol-collector:4317 
+The environment variable with the name OTELCOL_SERVER specified to point to the right OpenTelemetry Collector: (http://my-otelcol-collector:4317)
 
 ### Test Sample Application
 
@@ -406,15 +409,15 @@ hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
 ...
 ```
 
-Go to Jager URL.
+Go to Jaeger URL.
 Reload by pressing F5.
 Under Service select my-service. 
 Find Traces...
 
 ![Jaeger Find)](images/jaeger02.png)
 
-*star* The service name is specified in the application.properties (quarkus.application.name) of the demo app.
-*star* The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-otelcol-collector:4317).
+:star: The service name is specified in the application.properties (quarkus.application.name) of the demo app.
+:star: The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-otelcol-collector:4317).
 
 Open one trace entry and expand it to get all the details.
 
@@ -429,7 +432,7 @@ If you want more details on how the OpenTracing is done in Quarkus go to the Git
 Once you have enabled monitoring your own services, deployed a service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
 
 To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**.
-     
+
 :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
 
 Use the "Custom query" (PromQL) interface to run queries for your services.
@@ -440,6 +443,7 @@ Following metric names will be created:
 Type: histogram
 
 Description: a histogram of span latencies. Under the hood, Prometheus histograms will create a number of time series:
+
 - latency_count: The total number of data points across all buckets in the histogram.
 - latency_sum: The sum of all data point values.
 - latency_bucket: A collection of n time series (where n is the number of latency buckets) for each latency bucket identified by an le (less than or equal to) label. The latency_bucket counter with lowest le and le >= span latency will be incremented for each span.
@@ -456,12 +460,12 @@ If you are just interested in exposing application metrics to the dashboard, you
 
 ## Workaround
 
-When you want to use the Thanos-Querier in the OpenShift User Workload Monitoring you have to make some additinial changes to get access to the prometheus data of your project.
+When you want to use the Thanos-Querier in the OpenShift User Workload Monitoring you have to make some additional changes to get access to the Prometheus data of your project.
 
 - you have to present a authentication bearer to get access.
 - you need to add "namespace=" as query parameter. The bearer has to have at least view rights on the namespace.
 
-The newly SPM feature of Jaeger does not provide paramaters to set those requirments.
+The newly SPM feature of Jaeger does not provide paramaters to set those requirements.
 Two feature enhancment are created
 [spm additional query parameter required for prometheus](https://github.com/jaegertracing/jaeger/issues/4219)
 [spm bearer token required for prometheus](https://github.com/jaegertracing/jaeger/issues/4219)
@@ -479,6 +483,7 @@ deployment.apps/nginx created
 $ oc apply -f nginx/service.yaml
 service/nginx created
 ```
+
 Check that the nxinx pod is up and running
 
 ```shell
@@ -487,7 +492,7 @@ NAME                     READY   STATUS    RESTARTS   AGE
 nginx-76545df445-fj48l   1/1     Running   0          82m
 ```
 
-At the end we configure jaeger to use the proxy as prometheus endpoint.
+At the end we configure Jaeger to use the proxy as Prometheus endpoint.
 
 ```shell
 $ oc patch jaeger/my-jaeger --type='json' -p='[{"op": "replace","path": "/spec/allInOne/options/prometheus/server-url", "value":  "http://nginx:9092"}]' 
@@ -496,7 +501,7 @@ jaeger.jaegertracing.io/my-jaeger patched
 
 ## Show Service Performance Monitoring (SPM)
 
-If you have not created some testdata now is the right time...
+If you have not created some test data now is the right time...
 
 Go to your Jaeger UI, select the Monitor tab, and select the right service (my-service)
 

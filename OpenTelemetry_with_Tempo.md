@@ -37,12 +37,13 @@ In the the following diagram I will show you how the flow will be between your a
 To make the demo simpler I am using **Grafana Cloud**. Grafana Cloud is the open and composable observability platform that brings together metrics, logs, and traces with Grafana visualizations. Built for cloud native environments and powered by the best open source observability software – including Prometheus, Grafana Mimir, Grafana Loki, and Grafana Tempo – Grafana Cloud lets you focus on enabling observability, without the overhead of building, installing, maintaining, and scaling your observability stack.
 
 More details can be found
+
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
 - [Grafana Cloud](https://grafana.com/products/cloud/)
 
 ## Create Grafana Cloud User
 
-For using the Grafana Cloud you can create a free user. This ** Free Forever Cloud** user is limited. But for test and demo purposes this is fine. Also I do not have any internal data so I can use th cloud.
+For using the Grafana Cloud you can create a free user. This ** Free Forever Cloud** user is limited. But for test and demo purposes this is fine. Also I do not have any internal data so I can use the cloud.
 
 [Registration](https://grafana.com/auth/sign-up/create-user?pg=prod-cloud)
 
@@ -156,27 +157,26 @@ When the OpenTelemetryCollector instance is up and running you can check log.
 
 ```shell
 $ oc logs deployment/my-otelcol-tmpo-collector
-2023-03-16T11:04:31.454Z	info	service/telemetry.go:110	Setting up own telemetry...
-2023-03-16T11:04:31.454Z	info	service/telemetry.go:140	Serving Prometheus metrics	{"address": ":8888", "level": "basic"}
-2023-03-16T11:04:31.454Z	info	components/components.go:30	In development component. May change in the future.	{"kind": "exporter", "data_type": "traces", "name": "logging", "stability": "in development"}
-2023-03-16T11:04:31.454Z	warn	loggingexporter@v0.63.1/factory.go:110	'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.	{"kind": "exporter", "data_type": "traces", "name": "logging", "loglevel": "info", "equivalent verbosity level": "normal"}
-2023-03-16T11:04:31.455Z	info	service/service.go:89	Starting otelcol...	{"Version": "0.63.1", "NumCPU": 4}
-2023-03-16T11:04:31.455Z	info	extensions/extensions.go:42	Starting extensions...
-2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:74	Starting exporters...
-2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:78	Exporter is starting...	{"kind": "exporter", "data_type": "traces", "name": "logging"}
-2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:82	Exporter started.	{"kind": "exporter", "data_type": "traces", "name": "logging"}
-2023-03-16T11:04:31.455Z	info	pipelines/pipelines.go:78	Exporter is starting...	{"kind": "exporter", "data_type": "traces", "name": "otlp"}
-2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:82	Exporter started.	{"kind": "exporter", "data_type": "traces", "name": "otlp"}
-2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:86	Starting processors...
-2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:90	Processor is starting...	{"kind": "processor", "name": "batch", "pipeline": "traces"}
-2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:94	Processor started.	{"kind": "processor", "name": "batch", "pipeline": "traces"}
-2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:98	Starting receivers...
-2023-03-16T11:04:31.456Z	info	pipelines/pipelines.go:102	Receiver is starting...	{"kind": "receiver", "name": "otlp", "pipeline": "traces"}
-2023-03-16T11:04:31.456Z	info	otlpreceiver/otlp.go:71	Starting GRPC server	{"kind": "receiver", "name": "otlp", "pipeline": "traces", "endpoint": "0.0.0.0:4317"}
-2023-03-16T11:04:31.457Z	info	otlpreceiver/otlp.go:89	Starting HTTP server	{"kind": "receiver", "name": "otlp", "pipeline": "traces", "endpoint": "0.0.0.0:4318"}
-2023-03-16T11:04:31.457Z	info	pipelines/pipelines.go:106	Receiver started.	{"kind": "receiver", "name": "otlp", "pipeline": "traces"}
-2023-03-16T11:04:31.457Z	info	service/service.go:106	Everything is ready. Begin running and processing data.
-
+2023-03-16T11:04:31.454Z    info    service/telemetry.go:110    Setting up own telemetry...
+2023-03-16T11:04:31.454Z    info    service/telemetry.go:140    Serving Prometheus metrics    {"address": ":8888", "level": "basic"}
+2023-03-16T11:04:31.454Z    info    components/components.go:30    In development component. May change in the future.    {"kind": "exporter", "data_type": "traces", "name": "logging", "stability": "in development"}
+2023-03-16T11:04:31.454Z    warn    loggingexporter@v0.63.1/factory.go:110    'loglevel' option is deprecated in favor of 'verbosity'. Set 'verbosity' to equivalent value to preserve behavior.    {"kind": "exporter", "data_type": "traces", "name": "logging", "loglevel": "info", "equivalent verbosity level": "normal"}
+2023-03-16T11:04:31.455Z    info    service/service.go:89    Starting otelcol...    {"Version": "0.63.1", "NumCPU": 4}
+2023-03-16T11:04:31.455Z    info    extensions/extensions.go:42    Starting extensions...
+2023-03-16T11:04:31.455Z    info    pipelines/pipelines.go:74    Starting exporters...
+2023-03-16T11:04:31.455Z    info    pipelines/pipelines.go:78    Exporter is starting...    {"kind": "exporter", "data_type": "traces", "name": "logging"}
+2023-03-16T11:04:31.455Z    info    pipelines/pipelines.go:82    Exporter started.    {"kind": "exporter", "data_type": "traces", "name": "logging"}
+2023-03-16T11:04:31.455Z    info    pipelines/pipelines.go:78    Exporter is starting...    {"kind": "exporter", "data_type": "traces", "name": "otlp"}
+2023-03-16T11:04:31.456Z    info    pipelines/pipelines.go:82    Exporter started.    {"kind": "exporter", "data_type": "traces", "name": "otlp"}
+2023-03-16T11:04:31.456Z    info    pipelines/pipelines.go:86    Starting processors...
+2023-03-16T11:04:31.456Z    info    pipelines/pipelines.go:90    Processor is starting...    {"kind": "processor", "name": "batch", "pipeline": "traces"}
+2023-03-16T11:04:31.456Z    info    pipelines/pipelines.go:94    Processor started.    {"kind": "processor", "name": "batch", "pipeline": "traces"}
+2023-03-16T11:04:31.456Z    info    pipelines/pipelines.go:98    Starting receivers...
+2023-03-16T11:04:31.456Z    info    pipelines/pipelines.go:102    Receiver is starting...    {"kind": "receiver", "name": "otlp", "pipeline": "traces"}
+2023-03-16T11:04:31.456Z    info    otlpreceiver/otlp.go:71    Starting GRPC server    {"kind": "receiver", "name": "otlp", "pipeline": "traces", "endpoint": "0.0.0.0:4317"}
+2023-03-16T11:04:31.457Z    info    otlpreceiver/otlp.go:89    Starting HTTP server    {"kind": "receiver", "name": "otlp", "pipeline": "traces", "endpoint": "0.0.0.0:4318"}
+2023-03-16T11:04:31.457Z    info    pipelines/pipelines.go:106    Receiver started.    {"kind": "receiver", "name": "otlp", "pipeline": "traces"}
+2023-03-16T11:04:31.457Z    info    service/service.go:106    Everything is ready. Begin running and processing data.
 ```
 
 You can update the collector by:
@@ -265,8 +265,7 @@ EOF
 deployment.apps/otelcol-demo-app created
 service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
-$ oc set env deployment/otelcol-demo-app OTELCOL_SERVER=http://my-otelcol-tempo-collector:4317 SERVICE_NAME=https://`c get route otelcol-demo-app -o jsonpath='{.spec.host}'`
-deployment.apps/otelcol-demo-app updated
+$ oc set env deployment/otelcol-demo-app OTELCOL_SERVER=http://`oc get route otelcol-demo-app -o jsonpath='{.spec.host}'`
 ```
 
 You need to add an environment variable with the name OTELCOL_SERVER to specify a different url for the OpenTelemetry Collector.
@@ -295,6 +294,7 @@ Find Traces...
 ![Tempo Result](images/Tempo01.png)
 
 You can select some details on the query. e.g.
+
 - Service Name: you can select the the service name which specified in the application.properties (quarkus.application.name) of the demo app.
 - Tags: you can select the name of the trace. E.g. name="/sayRemote/{name}" in my demo application.
 - Min/Max Duration: select only traces which takes very log, e.g. min = 500ms
@@ -305,7 +305,7 @@ Open one trace entry and expand it to get all the details.
 
 Done!
 
-If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry](https://github.com/rbaumgar/otelcol-demo-app). 
+If you want more details on how the OpenTelemetry is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry](https://github.com/rbaumgar/otelcol-demo-app). 
 
 ## Remove this Demo
 
