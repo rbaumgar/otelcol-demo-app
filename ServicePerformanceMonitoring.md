@@ -21,7 +21,7 @@ OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.
 
 In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
 
-![Flow)](images/OpenTelemetryCollector.png)
+![Flow](images/OpenTelemetryCollector.png)
 
 To make the demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
 
@@ -36,7 +36,7 @@ A cluster administrator has to enable the Distributed Tracing Platform and Distr
 
 As of OpenShift 4.12, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.12/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-jaeger-operator-install_install-distributed-tracing).
 
-![operatorhub.png)](images/operatorhub.png)
+![operatorhub.png](images/operatorhub.png)
 
 In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no persistence.
 
@@ -173,7 +173,7 @@ my-jaeger-jaeger-demo.apps.rbaumgar.demo.net
 
 Open a new browser window and go to the route url and login with your OpenShift login (developer).
 
-![Jaeger homepage)](images/jaeger01.png)
+![Jaeger homepage](images/jaeger01.png)
 
 ## Create OpenTelemetry Collector
 
@@ -414,7 +414,7 @@ Reload by pressing F5.
 Under Service select my-service. 
 Find Traces...
 
-![Jaeger Find)](images/jaeger02.png)
+![Jaeger Find](images/jaeger02.png)
 
 :star: The service name is specified in the application.properties (quarkus.application.name) of the demo app.
 :star: The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-otelcol-collector:4317).
