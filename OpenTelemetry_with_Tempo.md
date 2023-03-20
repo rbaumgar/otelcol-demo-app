@@ -265,10 +265,13 @@ EOF
 deployment.apps/otelcol-demo-app created
 service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
-$ oc set env deployment/otelcol-demo-app OTELCOL_SERVER=http://`oc get route otelcol-demo-app -o jsonpath='{.spec.host}'`
+$ oc set env deployment/otelcol-demo-app \
+     OTELCOL_SERVER=http://my-otelcol-tempo-collector:4317 \
+     SERVICE_NAME=https://`oc get route otelcol-demo-app -o jsonpath='{.spec.host}'`
+deployment.apps/otelcol-demo-app updated   
 ```
 
-You need to add an environment variable with the name OTELCOL_SERVER to specify a different url for the OpenTelemetry Collector.
+You may need to add an environment variable with the name OTELCOL_SERVER to specify a different url for the OpenTelemetry Collector.
 
 ### Test Sample Application
 
