@@ -388,7 +388,7 @@ EOF
 deployment.apps/otelcol-demo-app created
 service/otelcol-demo-app created
 route.route.openshift.io/otelcol-demo-app exposed
-$ oc set env deployment/otelcol-demo-app SERVICE_NAME=http://`oc get route otelcol-demo-app -o jsonpath='{.spec.host}'`
+$ oc set env deployment/otelcol-demo-app SERVICE_NAME=https://`oc get route otelcol-demo-app -o jsonpath='{.spec.host}'`
 deployment.apps/otelcol-demo-app updated
 ```
 

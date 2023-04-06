@@ -1,16 +1,16 @@
 # Using OpenTelemetry and Grafana Tempo with Your Own Services/Application
 
-![](images/OpenTelemetryJaeger.png)
+![](images/monitor.jpg)
 
 *By Robert Baumgartner, Red Hat Austria, March 2023 (OpenShift 4.12, OpenShift distributed tracing data collection 0.63)*
 
-In this blog I will guide you on
+In this blog, I will guide you on
 
 - How to use OpenTelemetry with a Quarkus application.
 
-- How to forward your OpenTelememtry information to Tempo and display in Grafana UI.
+- How to forward your OpenTelememtry information to Tempo and display it in Grafana UI.
 
-In this blog I will use distributed tracing to instrument my services to gather insights into my service architecture. I am using distributed tracing for monitoring, network profiling, and troubleshooting the interaction between components in modern, cloud-native, microservices-based applications.
+I will use distributed tracing to instrument my services to gather insights into my service architecture. I am using distributed tracing for monitoring, network profiling, and troubleshooting the interaction between components in modern, cloud-native, microservices-based applications.
 
 Using distributed tracing lets you perform the following functions:
 
@@ -28,13 +28,13 @@ OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.
 
 **OpenTelemetry** is a collection of tools, APIs, and SDKs. Use it to instrument, generate, collect, and export telemetry data (metrics, logs, and traces) to help you analyze your software’s performance and behavior.
 
-**Grafana Tempo** is an open source, easy-to-use and high-scale distributed tracing backend. Tempo is cost-efficient, requiring only object storage to operate, and is deeply integrated with Grafana, Prometheus, and Loki. (https://github.com/grafana/tempo)
+**Grafana Tempo** is an open source, easy-to-use, and high-scale distributed tracing backend. Tempo is cost-efficient, requiring only object storage to operate, and is deeply integrated with Grafana, Prometheus, and Loki. (https://github.com/grafana/tempo)
 
-In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Grafana Tempo.
+In the following diagram, I will show you how the flow will be between your application, OpenTelemetry, and Grafana Tempo.
 
 ![Flow](images/OpenTelemetryTempo.png)
 
-To make the demo simpler I am using **Grafana Cloud**. Grafana Cloud is the open and composable observability platform that brings together metrics, logs, and traces with Grafana visualizations. Built for cloud native environments and powered by the best open source observability software – including Prometheus, Grafana Mimir, Grafana Loki, and Grafana Tempo – Grafana Cloud lets you focus on enabling observability, without the overhead of building, installing, maintaining, and scaling your observability stack.
+To make the demo simpler I am using **Grafana Cloud**. Grafana Cloud is an open and composable observability platform that brings together metrics, logs and traces with Grafana visualizations. Built for cloud native environments and powered by the best open source observability software – including Prometheus, Grafana Mimir, Grafana Loki, and Grafana Tempo – Grafana Cloud lets you focus on enabling observability, without the overhead of building, installing, maintaining, and scaling your observability stack.
 
 More details can be found
 
@@ -43,11 +43,11 @@ More details can be found
 
 ## Create Grafana Cloud User
 
-For using the Grafana Cloud you can create a free user. This ** Free Forever Cloud** user is limited. But for test and demo purposes this is fine. Also I do not have any internal data so I can use the cloud.
+For using the Grafana Cloud you can create a free user. This ** Free Forever Cloud** user is limited. But for test and demo purposes this is fine. Also, I do not have any internal data so I can use the cloud.
 
 [Registration](https://grafana.com/auth/sign-up/create-user?pg=prod-cloud)
 
-After successful registration you need to go to the details of Tempo and store the URL, the user and generate an API Key.
+After successful registration, you need to go to the details of Tempo and store the URL, the user, and the generated API Key.
 
 ```shell
 $ export TEMPO_URL=tempo-prod-08-prod-eu-west-3.grafana.net:443
@@ -59,11 +59,11 @@ $ export TEMPO_APIKEY=USghh4VZFSFxFsrDicgXK53q95KESubjRyXhzzQfGAoGUX3DZdXAuVZfAs
 
 A cluster administrator has to enable the Distributed Tracing Platform operator once. 
 
-As of OpenShift 4.12, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.12/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-install-otel-operator_install-distributed-tracing).
+As of OpenShift 4.12, this is done easily using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.12/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-install-otel-operator_install-distributed-tracing).
 
 ![operatorhub.png](images/operatorhub.png)
 
-In this demo we do need only the **OpenShift distributed tracing data collection Operator**.
+In this demo, we do need only the **OpenShift distributed tracing data collection Operator**.
 
 Make sure you are logged in as cluster-admin.
 
@@ -79,11 +79,11 @@ opentelemetrycollectors.opentelemetry.io   2021-12-15T07:57:38Z
 
 ## Create a New Project
 
-Create a new project (for example jaeger-demo) and give a normal user (such as developer) admin rights onto the project:
-
+Create a new project (for example tempo-demo) and give a normal user (such as a developer) admin rights to the project:
+ 
 ```shell
 $ oc new-project tempo-demo
-Now using project "jaeger-demo" on server "https://api.yourserver:6443".
+Now using project "tempo-demo" on server "https://api.yourserver:6443".
 
 You can add applications to this project with the 'new-app' command. For example, try:
 
@@ -189,11 +189,11 @@ $ oc edit opentelemetrycollector my-otelcol-tempo
 
 ### Deploy a Sample Application
 
-All modern application development frameworks (like Quarkus) supports OpenTelemetry features, [Quarkus - USING OPENTELEMETRY](https://quarkus.io/guides/opentelemetry).
+All modern application development frameworks (like Quarkus) support OpenTelemetry features, [Quarkus - USING OPENTELEMETRY](https://quarkus.io/guides/opentelemetry).
 
 To simplify this document, I am using an existing example. The application is based on an example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
 
-Deploying a sample application monitor-demo-app end expose a route:
+Deploying a sample application monitor-demo-app and exposing it as a route:
 
 ```shell
 $ cat <<EOF |oc apply -f -
@@ -271,36 +271,24 @@ $ oc set env deployment/otelcol-demo-app \
 deployment.apps/otelcol-demo-app updated   
 ```
 
-You may need to add an environment variable with the name OTELCOL_SERVER to specify a different url for the OpenTelemetry Collector.
+You may need to add an environment variable with the name OTELCOL_SERVER to specify a different URL for the OpenTelemetry Collector.
 
 ### Test Sample Application
 
-Check the router url with */hello* and see the hello message with the pod name. Do this multiple times.
-
-```shell
-$ export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
-$ curl $URL/hello
-hello 
-$ curl $URL/sayHello/demo1
-hello: demo1
-$ curl $URL/sayRemote/demo2
-hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
-...
-```
-
-Go to Grafana Cloud URL.
+Check the router URL with */hello* and see the hello message with the pod name. Do this multiple times.
+Go to the Grafana Cloud URL.
 Launch Grafana.
 Click on Explore. 
-Select as Query type Search and Run Query.
+Select Query type Search and Run Query.
 Find Traces...
 
 ![Tempo Result](images/Tempo01.png)
 
 You can select some details on the query. e.g.
 
-- Service Name: you can select the the service name which specified in the application.properties (quarkus.application.name) of the demo app.
+- Service Name: you can select the service name specified in the application.properties (quarkus.application.name) of the demo app.
 - Tags: you can select the name of the trace. E.g. name="/sayRemote/{name}" in my demo application.
-- Min/Max Duration: select only traces which takes very log, e.g. min = 500ms
+- Min/Max Duration: select only traces that takes very long, e.g. min = 500ms
 
 Open one trace entry and expand it to get all the details.
 
@@ -308,7 +296,7 @@ Open one trace entry and expand it to get all the details.
 
 Done!
 
-If you want more details on how the OpenTelemetry is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry](https://github.com/rbaumgar/otelcol-demo-app). 
+If you want more details on how the OpenTelemetry is done in Quarkus go to the GitHub example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry](https://github.com/rbaumgar/otelcol-demo-app). 
 
 ## Remove this Demo
 
