@@ -1,12 +1,12 @@
 In this project you will  find two interesting guides:
 
-- [Using OpenTelemetry and Jaeger with Your Own Application](OpenTelemetry.md)
-- [Using OpenTelemetry and Grafana Tempo with Your Own Services/Application](OpenTelemetry_with_Tempo.md)
-- [Service Performance Monitoring (SPM) with Jaeger of your Own Application](ServicePerformanceMonitoring.md)
+- [Using OpenTelemetry and Jaeger with Your Application](OpenTelemetry.md)
+- [Using OpenTelemetry and Grafana Tempo with Your Services/Application](OpenTelemetry_with_Tempo.md)
+- [Service Performance Monitoring (SPM) with Jaeger of your Application](ServicePerformanceMonitoring.md)
 
 # otelcol-demo-app
 
-Quarkus demo app to show using OpenTelemetry and Jaeger with Your Own Services/Application
+Quarkus demo app to show using OpenTelemetry and Jaeger with Your Services/Application
 
 Quarkus guide: [Quarkus - Using OpenTelemetry](https://quarkus.io/guides/opentelemetry)
 
@@ -50,7 +50,7 @@ __  ____  __  _____   ___  __ ____  ______
 2022-01-04 15:56:49,169 INFO  [io.quarkus] (Quarkus Main Thread) Installed features: [cdi, kubernetes, opentelemetry, opentelemetry-otlp-exporter, rest-client, resteasy, smallrye-context-propagation, vertx]
 ```
 
-and from an other window
+and from another window
 
 ```shell
 $ curl localhost:8080/hello
@@ -72,13 +72,13 @@ Execute in a new window:
 $ oc port-forward deployment/my-otelcol-collector 4317:4317
 ```
 
-When you run Jaeger version 1.35+ you do no longer need the OpenTelemetryCollector. See [Jaeger](https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c)
+When you run Jaeger version 1.35+ you no longer need the OpenTelemetryCollector. See [Jaeger](https://medium.com/jaegertracing/introducing-native-support-for-opentelemetry-in-jaeger-eb661be8183c)
 
 ```shell
 $ oc port-forward svc/my-jaeger-collector 4317:4317
 ```
 
-# Build an image with podman
+# Build an image with Podman
 
 ```shell
 $ mvn clean package -DskipTests
@@ -92,14 +92,15 @@ Successfully tagged quay.io/rbaumgar/otelcol-demo-app-jvm:latest
 
 You can also use *docker*.
 
-# Build a quarkus native image
+# Build a Quarkus native image
 
 You need to install Graal VM and set the correct pointer.
 
 ```shell
 $ export GRAALVM_HOME=~/graalvm-ce-java11-21.3.0/
 $ export JAVA_HOME=$GRAALVM_HOME
-$ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=[podman | docker]
+$ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=podman 
+$ podman build -f src/main/docker/Dockerfile.native -t  quay.io/rbaumgar/otelcol-demo-app-native .
 $ ls file target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
 
 $ target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
@@ -130,7 +131,7 @@ $ oc rollout status -w dc/monitor-demo
 $ podman run -i --rm -p 8080:8080 rbaumgar/otelcol-demo-app-jvm
 ```
 
-# Push image to registry
+# Push the image to a registry
 
 Find the *image id* and push it. You might need to login at first.
 
