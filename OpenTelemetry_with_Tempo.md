@@ -303,7 +303,7 @@ If you want more details on how the OpenTelemetry is done in Quarkus go to the G
 ```shell
 $ oc delete deployment,svc,route otelcol-demo-app
 $ oc delete opentelemetrycollectors my-otelcol-tempo
-$ oc delete project jaeger-demo
+$ oc delete project tempo-demo
 ```
 
 This document: 
