@@ -156,7 +156,7 @@ opentelemetrycollector.opentelemetry.io/my-otelcol-tempo created
 When the OpenTelemetryCollector instance is up and running you can check log.
 
 ```shell
-$ oc logs deployment/my-otelcol-tmpo-collector
+$ oc logs deployment/my-otelcol-tempo-collector
 2023-03-16T11:04:31.454Z    info    service/telemetry.go:110    Setting up own telemetry...
 2023-03-16T11:04:31.454Z    info    service/telemetry.go:140    Serving Prometheus metrics    {"address": ":8888", "level": "basic"}
 2023-03-16T11:04:31.454Z    info    components/components.go:30    In development component. May change in the future.    {"kind": "exporter", "data_type": "traces", "name": "logging", "stability": "in development"}
