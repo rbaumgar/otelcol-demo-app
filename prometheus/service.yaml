@@ -1,0 +1,12 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-prometheus
+spec:
+  ports:
+    - protocol: TCP
+      port: 9090
+      targetPort: 9090
+  type: ClusterIP
+  selector:
+    app: my-prometheus

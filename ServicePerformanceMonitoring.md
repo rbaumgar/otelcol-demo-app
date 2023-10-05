@@ -3,15 +3,16 @@
 ![](images/jaeger04.png)
 
 *By Robert Baumgartner, Red Hat Austria, February 2023 (OpenShift 4.12)*
+*By Robert Baumgartner, Red Hat Austria, October 2023 (OpenShift 4.13)*
 
 In this blog I will guide you on how to use service performance monitoring (spm) with jaeger.
 It should work with any appliaction that is working with OpenTelemetry.
 
-This document is based on OpenShift 4.12. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.12/distr_tracing/distributed-tracing-release-notes.html).
+This document is based on OpenShift 4.13. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.13/distr_tracing/distr_tracing_rn/distr-tracing-rn-2-9.html).
 
-OpenShift distributed tracing platform Operator is based on Jaeger 1.39.
+OpenShift distributed tracing platform Operator is based on Jaeger 1.47.0
 
-OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.63.1
+OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.81.0
 
 ## OpenTelemetry and Jaeger
 
@@ -28,13 +29,13 @@ To make the demo simpler I am using the AllInOne  image from Jaeger. This will i
 More details can be found
 
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
-- [Jaeger Components](https://www.jaegertracing.io/docs/1.29/architecture/#components)
+- [Jaeger Components](https://www.jaegertracing.io/docs/1.47/architecture/#components)
 
 ## Enabling Distributed Tracing
 
 A cluster administrator has to enable the Distributed Tracing Platform and Distributed Tracing Data Collection operator once. 
 
-As of OpenShift 4.12, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.12/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-jaeger-operator-install_install-distributed-tracing).
+As of OpenShift 4.13, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.13/distr_tracing/distr_tracing_jaeger/distr-tracing-jaeger-installing.html).
 
 ![operatorhub.png](images/operatorhub.png)
 
@@ -47,12 +48,12 @@ After a short time, you can check that the operator pods were created and runnin
 ```shell
 $ oc get pod -n openshift-distributed-tracing|grep jaeger
 jaeger-operator-bc65549bd-hch9v                              1/1     Running   0             10d
-$ oc get pod -n openshift-operators|grep opentelemetry
+$ oc get pod -n openshift-opentelemetry-operator
 opentelemetry-operator-controller-manager-69f7f56598-nsr5h   2/2     Running   0             10d
-$ oc get crd jaegers 
+$ oc get crd jaegers.jaegertracing.io
 NAME                       CREATED AT
 jaegers.jaegertracing.io   2021-12-08T15:51:29Z
-$ oc get crd opentelemetrycollectors
+$ oc get crd opentelemetrycollectors.opentelemetry.io
 NAME                                       CREATED AT
 opentelemetrycollectors.opentelemetry.io   2021-12-15T07:57:38Z
 ```
@@ -112,7 +113,9 @@ to build a new example application in Ruby. Or use kubectl to deploy a simple Ku
 
     kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
 $ oc policy add-role-to-user admin developer -n jaeger-demo 
-clusterrole.rbac.authorization.k8s.io/admin added: "developer"  
+clusterrole.rbac.authorization.k8s.io/admin added: "developer"
+$ oc policy add-role-to-user monitoring-edit developer -n jaeger-demo 
+clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 ```
 
 ## Login as the Normal User
@@ -127,6 +130,8 @@ Login successful.
 You have one project on this server: "jaeger-demo"
 
 Using project "jaeger-demo".
+
+$ NAMESPACE=`oc project -q`
 ```
 
 ## Create Jaeger
@@ -142,15 +147,18 @@ metadata:
 spec:
   allInOne:
     # image: jaegertracing/all-in-one:1.31
+    metricsStorage:
+      type: prometheus
     options:
       # log-level: debug
-      # query:
-        # base-path: /jaeger
       prometheus:
+        query:
+          # namespace for thanos-querier
+          support-spanmetrics-connector: true
         server-url: "https://thanos-querier.openshift-monitoring.svc:9092"
-        tls.ca: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-        # tls.key: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls.ca: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         tls.enabled: "true"
+        token-file: /var/run/secrets/kubernetes.io/serviceaccount/token
     metricsStorage:
       type: prometheus
   strategy: allinone
@@ -200,37 +208,42 @@ spec:
           grpc:
           http:
 
-      # Dummy receiver that's never used, because a pipeline is required to have one.
-      otlp/spanmetrics:
-        protocols:
-          grpc:
-            endpoint: "localhost:65535"
+    connectors:
+      spanmetrics:
 
     exporters:
+      logging: 
+
       prometheus:
         endpoint: "0.0.0.0:8889"
 
+      # prometheusremotewrite:
+      #   endpoint: http://prometheus-service:9090/api/v1/write
+      #   target_info:
+      #     enabled: true
+
       jaeger:
-        endpoint: my-jaeger-collector-headless.jaeger-demo.svc:14250
+        endpoint: my-jaeger-collector-headless.$NAMESPACE.svc:14250
         tls:
           ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
 
-    processors:
-      batch:
-      spanmetrics:
-        metrics_exporter: prometheus
+    extensions:
+      health_check:
+
+    # processors:
+    #   batch:
 
     service:
+      extensions: [health_check]
       pipelines:
         traces:
-          receivers: [otlp, jaeger]
-          processors: [spanmetrics, batch]
-          exporters: [jaeger]
-        # The exporter name in this pipeline must match the spanmetrics.metrics_exporter name.
-        # The receiver is just a dummy and never used; added to pass validation requiring at least one receiver in a pipeline.
-        metrics/spanmetrics:
-          receivers: [otlp/spanmetrics]
-          exporters: [prometheus]
+          receivers: [otlp]
+          exporters: [spanmetrics,jaeger]
+        metrics:
+          receivers: [spanmetrics]
+          exporters: [prometheus, logging]
+          
+  image: 'otel/opentelemetry-collector-contrib:0.81.0'       
 
   mode: deployment
   ports:
@@ -238,8 +251,6 @@ spec:
       port: 8889
       protocol: TCP
       targetPort: 8889
-  ingress: {}
-  image: 'otel/opentelemetry-collector-contrib:latest'
 EOF
 opentelemetrycollector.opentelemetry.io/my-otelcol created
 ```
@@ -399,7 +410,7 @@ The environment variable with the name OTELCOL_SERVER specified to point to the 
 Check the router url with */hello* and see the hello message with the pod name. Do this multiple times.
 
 ```shell
-$ export URL=$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
+$ export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
 $ curl $URL/hello
 hello 
 $ curl $URL/sayHello/demo1
@@ -436,21 +447,31 @@ To access the metrics as a developer or a user with permissions, go to the OpenS
 :star: Developers can only use the Developer Perspective. They can only query metrics from a single project.
 
 Use the "Custom query" (PromQL) interface to run queries for your services.
-Enter "latency" and ENTER you will get a list of all available values...
+Enter "duration" and ENTER you will get a list of all available values...
 
 Following metric names will be created:
+
+Type: counter
+
+Description: counts the total number of spans, including error spans. Call counts are differentiated from errors via the status_code label. Errors are identified as any time series with the label status_code = "STATUS_CODE_ERROR".
+
+- calls
 
 Type: histogram
 
 Description: a histogram of span latencies. Under the hood, Prometheus histograms will create a number of time series:
 
-- latency_count: The total number of data points across all buckets in the histogram.
-- latency_sum: The sum of all data point values.
-- latency_bucket: A collection of n time series (where n is the number of latency buckets) for each latency bucket identified by an le (less than or equal to) label. The latency_bucket counter with lowest le and le >= span latency will be incremented for each span.
+- duration_count: The total number of data points across all buckets in the histogram.
+- duration_sum: The sum of all data point values.
+- duration_bucket: A collection of n time series (where n is the number of latency buckets) for each latency bucket identified by an le (less than or equal to) label. The latency_bucket counter with lowest le and le >= span latency will be incremented for each span.
 
 Here is an example
 
 ![Observe](images/observe01.png)
+
+Some more examples: 
+- duration_sum{job="my-otelcol-collector",span_name="/hello"}
+- sum(rate(calls{service_name =~ "my-service", span_kind =~ "SPAN_KIND_SERVER"}[10m])) by (service_name)
 
 You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
 
@@ -509,18 +530,15 @@ Go to your Jaeger UI, select the Monitor tab, and select the right service (my-s
 
 Done!
 
-The only thing you have to keep in mind is that this feature is under development!!!
-But it is very interesting what's coming.
 
 ## Remove this Demo
 
 ```shell
-$ oc delete all nginx
+$ oc delete deployment,svc,cm nginx
 $ oc delete servicemonitor otelcol-monitor
 $ oc delete deployment,svc,route otelcol-demo-app
 $ oc delete opentelemetrycollector my-otelcol
 $ oc delete jaeger my-jaeger
-$ oc delete cm my-otelcol-cabundle
 $ oc delete project jaeger-demo
 ```
 

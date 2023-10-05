@@ -1,0 +1,45 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: my-prometheus
+  labels:
+    app: my-prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-prometheus
+  template:
+    metadata:
+      labels:
+        app: my-prometheus
+    spec:
+      volumes:
+        - name: my-prometheus-config-volume
+          configMap:
+            name: my-prometheus-conf
+            defaultMode: 420
+        - name: my-prometheus-storage-volume
+          emptyDir: {}
+      containers:
+        - resources: {}
+          terminationMessagePath: /dev/termination-log
+          name: prometheus
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: my-prometheus-config-volume
+              mountPath: /etc/prometheus/
+            - name: my-prometheus-storage-volume
+              mountPath: /prometheus/
+          terminationMessagePolicy: File
+          image: prom/prometheus
+          args:
+            - '--storage.tsdb.retention.time=12h'
+            - '--config.file=/etc/prometheus/prometheus.yml'
+            - '--storage.tsdb.path=/prometheus/'
+            - '--enable-feature=remote-write-receiver'
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
