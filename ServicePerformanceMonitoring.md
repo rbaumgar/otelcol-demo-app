@@ -5,8 +5,8 @@
 *By Robert Baumgartner, Red Hat Austria, February 2023 (OpenShift 4.12)*
 *By Robert Baumgartner, Red Hat Austria, October 2023 (OpenShift 4.13)*
 
-In this blog I will guide you on how to use service performance monitoring (spm) with jaeger.
-It should work with any appliaction that is working with OpenTelemetry.
+In this blog I will guide you on how to use service performance monitoring (SPM) with Jaeger.
+It should work with any application that is working with OpenTelemetry.
 
 This document is based on OpenShift 4.13. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.13/distr_tracing/distr_tracing_rn/distr-tracing-rn-2-9.html).
 
@@ -20,11 +20,11 @@ OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.
 
 **Jaeger** is a tool to monitor and troubleshoot transactions in complex distributed systems.
 
-In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
+In the following diagram, I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
 
 ![Flow](images/OpenTelemetryCollector.png)
 
-To make the demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
+To make the demo simpler I am using the AllInOne image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
 
 More details can be found
 
@@ -35,11 +35,11 @@ More details can be found
 
 A cluster administrator has to enable the Distributed Tracing Platform and Distributed Tracing Data Collection operator once. 
 
-As of OpenShift 4.13, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.13/distr_tracing/distr_tracing_jaeger/distr-tracing-jaeger-installing.html).
+As of OpenShift 4.13, this can be done easily by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.13/distr_tracing/distr_tracing_jaeger/distr-tracing-jaeger-installing.html).
 
 ![operatorhub.png](images/operatorhub.png)
 
-In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no persistence.
+In this demo, we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no persistence.
 
 Make sure you are logged in as cluster-admin!
 
@@ -60,7 +60,7 @@ opentelemetrycollectors.opentelemetry.io   2021-12-15T07:57:38Z
 
 ## Enabling Monitoring of Your Own Services in OpenShift 4.6+
 
-Using the montoring for user-defined projects in OpenShift saves us to deploy our own Prometheus instance.
+Using the monitoring for user-defined projects in OpenShift saves us from deploying our own Prometheus instance.
 
 In OpenShift version 4.6+ monitoring for user-defined projects is GA. See [Enabling monitoring for user-defined projects](https://docs.openshift.com/container-platform/4.12/monitoring/enabling-monitoring-for-user-defined-projects.html)
 
@@ -99,7 +99,7 @@ thanos-ruler-user-workload-1           3/3     Running   0          10h
 
 ## Create a New Project
 
-Create a new project (for example jaeger-demo) and give a normal user (such as developer) admin rights onto the project:
+Create a new project (for example jaeger-demo) and give a normal user (such as a developer) admin rights to the project:
 
 ```shell
 $ oc new-project jaeger-demo
@@ -112,9 +112,10 @@ You can add applications to this project with the 'new-app' command. For example
 to build a new example application in Ruby. Or use kubectl to deploy a simple Kubernetes application:
 
     kubectl create deployment hello-node --image=k8s.gcr.io/serve_hostname
-$ oc policy add-role-to-user admin developer -n jaeger-demo 
+$ NAMESPACE=`oc project -q`
+$ oc policy add-role-to-user admin developer -n $NAMESPACE 
 clusterrole.rbac.authorization.k8s.io/admin added: "developer"
-$ oc policy add-role-to-user monitoring-edit developer -n jaeger-demo 
+$ oc policy add-role-to-user monitoring-edit developer -n $NAMESPACE 
 clusterrole.rbac.authorization.k8s.io/monitoring-edit added: "developer"
 ```
 
@@ -130,8 +131,6 @@ Login successful.
 You have one project on this server: "jaeger-demo"
 
 Using project "jaeger-demo".
-
-$ NAMESPACE=`oc project -q`
 ```
 
 ## Create Jaeger
@@ -154,13 +153,12 @@ spec:
       prometheus:
         query:
           # namespace for thanos-querier
+          # namespace: $NAMESPACE
           support-spanmetrics-connector: true
         server-url: "https://thanos-querier.openshift-monitoring.svc:9092"
         tls.ca: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
         tls.enabled: "true"
         token-file: /var/run/secrets/kubernetes.io/serviceaccount/token
-    metricsStorage:
-      type: prometheus
   strategy: allinone
 EOF
 jaeger.jaegertracing.io/my-jaeger created
@@ -179,7 +177,7 @@ $ oc get route my-jaeger -o jsonpath='{.spec.host}'
 my-jaeger-jaeger-demo.apps.rbaumgar.demo.net
 ```
 
-Open a new browser window and go to the route url and login with your OpenShift login (developer).
+Open a new browser window, go to the route URL and login with your OpenShift login (developer).
 
 ![Jaeger homepage](images/jaeger01.png)
 
@@ -210,6 +208,13 @@ spec:
 
     connectors:
       spanmetrics:
+        dimensions:
+          - name: http.method
+            default: GET
+          - name: http.status_code
+          - name: http.route
+
+        exclude_dimensions: ['status.code']      
 
     exporters:
       logging: 
@@ -255,6 +260,9 @@ EOF
 opentelemetrycollector.opentelemetry.io/my-otelcol created
 ```
 
+In the configuration, we have added three new values to be added to the spanmetrics: "http.method", "http.status_code" and "http.route".
+This helps to use later also a Grafana dashboard in the OpenShift UI. [OpenTelemetry APM](https://grafana.com/grafana/dashboards/19419-opentelemetry-apm/)
+
 When the OpenTelemetryCollector instance is up and running you can check log.
 
 ```shell
@@ -280,7 +288,7 @@ $ oc logs deployment/my-otelcol-collector
 Very important is the last line ("State of connection...") which shows that the collector is connected to the Jaeger instance.
 If this is not the case, you have to update the spec.config.exports.jaeger.endpoint value in your OpenTelemetry Collector instance. Should be <jaeger-collector-headless>.<jaeger-namespace>.svc:14250.
 
-Can be done by:
+This can be done by:
 
 ```shell
 $ oc edit opentelemetrycollector my-otelcol
@@ -323,21 +331,21 @@ NAME                   AGE
 otelcol-monitor   42s
 ```
 
-:star: The *matchLabels* must be the same as it is defined at monitoring service of The OpenTelemetry Collector!
+:star: The *matchLabels* must be the same as it is defined at the monitoring service of The OpenTelemetry Collector!
 
 ## Sample Application
 
 You can use any application which is using OpenTelemetry. You have to make sure that your application is sending the OpenTelemetry data to http://my-otelcol-collector:4317!
 
-If you have no application, continue and deploy the sample application. Otherwise go to the next chapter.
+If you have no application, continue and deploy the sample application. Otherwise, go to the next chapter.
 
 ### Deploy a Sample Application
 
-All modern application development frameworks (like Quarkus) supports OpenTelemetry features, [Quarkus - USING OPENTELEMETRY](https://quarkus.io/guides/opentelemetry).
+All modern application development frameworks (like Quarkus) support OpenTelemetry features, [Quarkus - USING OPENTELEMETRY](https://quarkus.io/guides/opentelemetry).
 
 To simplify this document, I am using an existing example. The application is based on an example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
 
-Deploying a sample application monitor-demo-app end expose a route:
+Deploying a sample application monitor-demo-app end exposes a route:
 
 ```shell
 $ cat <<EOF |oc apply -f -
@@ -407,20 +415,8 @@ The environment variable with the name OTELCOL_SERVER specified to point to the 
 
 ### Test Sample Application
 
-Check the router url with */hello* and see the hello message with the pod name. Do this multiple times.
-
-```shell
-$ export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
-$ curl $URL/hello
-hello 
-$ curl $URL/sayHello/demo1
-hello: demo1
-$ curl $URL/sayRemote/demo2
-hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
-...
-```
-
-Go to Jaeger URL.
+Check the router URL with */hello* and see the hello message with the pod name. Do this multiple times.
+Go to Jaeger's URL.
 Reload by pressing F5.
 Under Service select my-service. 
 Find Traces...
@@ -428,7 +424,7 @@ Find Traces...
 ![Jaeger Find](images/jaeger02.png)
 
 :star: The service name is specified in the application.properties (quarkus.application.name) of the demo app.
-:star: The url of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-otelcol-collector:4317).
+:star: The URL of the collector is specified in the application.properties (quarkus.opentelemetry.tracer.exporter.otlp.endpoint=http://my-otelcol-collector:4317).
 
 Open one trace entry and expand it to get all the details.
 
@@ -436,11 +432,11 @@ Open one trace entry and expand it to get all the details.
 
 Done!
 
-If you want more details on how the OpenTracing is done in Quarkus go to the Github example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
+If you want more details on how the OpenTracing is done in Quarkus go to the GitHub example at [GitHub - rbaumgar/otelcol-demo-app: Quarkus demo app to show OpenTelemetry with Jaeger](https://github.com/rbaumgar/otelcol-demo-app). 
 
 ## Accessing the Metrics of Your Service
 
-Once you have enabled monitoring your own services, deployed a service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
+Once you have enabled monitoring of your application service and deployed service, and set up metrics collection for it, you can access the metrics of the service as a cluster administrator, as a developer, or as a user with view permissions for the project.
 
 To access the metrics as a developer or a user with permissions, go to the OpenShift Container Platform web console, switch to the Developer Perspective, then click **Observer → Metrics**.
 
@@ -449,21 +445,19 @@ To access the metrics as a developer or a user with permissions, go to the OpenS
 Use the "Custom query" (PromQL) interface to run queries for your services.
 Enter "duration" and ENTER you will get a list of all available values...
 
-Following metric names will be created:
+The following metric names will be created:
 
+- calls
 Type: counter
 
 Description: counts the total number of spans, including error spans. Call counts are differentiated from errors via the status_code label. Errors are identified as any time series with the label status_code = "STATUS_CODE_ERROR".
 
-- calls
-
-Type: histogram
-
-Description: a histogram of span latencies. Under the hood, Prometheus histograms will create a number of time series:
-
 - duration_count: The total number of data points across all buckets in the histogram.
 - duration_sum: The sum of all data point values.
 - duration_bucket: A collection of n time series (where n is the number of latency buckets) for each latency bucket identified by an le (less than or equal to) label. The latency_bucket counter with lowest le and le >= span latency will be incremented for each span.
+Type: histogram
+
+Description: a histogram of span durations/latencies. Under the hood, Prometheus histograms will create a number of time series.
 
 Here is an example
 
@@ -471,7 +465,7 @@ Here is an example
 
 Some more examples: 
 - duration_sum{job="my-otelcol-collector",span_name="/hello"}
-- sum(rate(calls{service_name =~ "my-service", span_kind =~ "SPAN_KIND_SERVER"}[10m])) by (service_name)
+- sum(rate(calls{service_name="my-service", job="my-otelcol-collector"}[1m])) by (service_name, span_name)
 
 You can also use the **Thanos Querier** to display the application metrics. The Thanos Querier enables aggregating and, optionally, deduplicating cluster and user workload metrics under a single, multi-tenant interface.
 
@@ -483,16 +477,27 @@ If you are just interested in exposing application metrics to the dashboard, you
 
 When you want to use the Thanos-Querier in the OpenShift User Workload Monitoring you have to make some additional changes to get access to the Prometheus data of your project.
 
-- you have to present a authentication bearer to get access.
-- you need to add "namespace=" as query parameter. The bearer has to have at least view rights on the namespace.
+- you have to present an authentication bearer to get access.
+- you need to add "namespace=" as a query parameter. The bearer has to have at least view rights on the namespace.
 
-The newly SPM feature of Jaeger does not provide paramaters to set those requirements.
-Two feature enhancment are created
+The new SPM feature of Jaeger does not provide parameters to set those requirements.
+Two feature enhancments are created
 [spm additional query parameter required for prometheus](https://github.com/jaegertracing/jaeger/issues/4219)
 [spm bearer token required for prometheus](https://github.com/jaegertracing/jaeger/issues/4219)
-So I decided to create a nginx reverse proxy with this feature.
 
-Deploy the nginx:
+You have now two options as a workaround.
+
+### Set Cluster Monitoring viewer
+
+```shell
+$ oc adm policy add-cluster-role-to-user openshift-cluster-monitoring-view -z my-jaeger-ui-proxy
+clusterrole.rbac.authorization.k8s.io/openshift-cluster-monitoring-view added: "my-jaeger-ui-proxy"
+$ oc patch jaeger/my-jaeger --type='json' -p='[{"op": "replace","path": "/spec/allInOne/options/prometheus/server-url", "value":  "https://thanos-querier.openshift-monitoring.svc:9091"}]' 
+jaeger.jaegertracing.io/my-jaeger patched
+```
+
+### Deploy the nginx:
+Create a Nginx reverse proxy with this feature.
 
 ```shell
 $ NAMESPACE=`oc project -q`
@@ -505,7 +510,7 @@ $ oc apply -f nginx/service.yaml
 service/nginx created
 ```
 
-Check that the nxinx pod is up and running
+Check that the Nxinx pod is up and running
 
 ```shell
 $ oc get pod -l app=nginx
@@ -513,7 +518,7 @@ NAME                     READY   STATUS    RESTARTS   AGE
 nginx-76545df445-fj48l   1/1     Running   0          82m
 ```
 
-At the end we configure Jaeger to use the proxy as Prometheus endpoint.
+In the end, we configure Jaeger to use the proxy as the Prometheus endpoint.
 
 ```shell
 $ oc patch jaeger/my-jaeger --type='json' -p='[{"op": "replace","path": "/spec/allInOne/options/prometheus/server-url", "value":  "http://nginx:9092"}]' 
