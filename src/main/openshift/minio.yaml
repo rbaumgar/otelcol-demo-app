@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  annotations: {}
+  name: minio-access-secrets
+stringData:
+  minioSecret: minio123
+  minioAccessKey: minio
+  minioConsoleAddress: ":44645"
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  labels:
+    app.kubernetes.io/name: minio
+  name: minio-home-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  labels:
+    app.kubernetes.io/name: minio
+  name: minio-config-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: minio
+  name: minio
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: minio
+  ports:
+    - name: web
+      port: 9000
+      targetPort: 9000
+    - name: console
+      port: 44645
+      targetPort: 44645
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: minio
+  name: minio-server
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minio
+    spec:
+      containers:
+        - name: minio
+          env:
+            - name: MINIO_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-access-secrets
+                  key: minioAccessKey
+            - name: MINIO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: minio-access-secrets
+                  key: minioSecret
+            - name: MINIO_CONSOLE_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: minio-access-secrets
+                  key: minioConsoleAddress
+          image: minio/minio
+          args:
+            - server
+            - /data
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+              name: web
+          volumeMounts:
+            - name: home
+              mountPath: /data
+            - name: config
+              mountPath: /root/.minio
+      volumes:
+        - name: home
+          persistentVolumeClaim:
+            claimName: minio-home-claim
+        - name: config
+          persistentVolumeClaim:
+            claimName: minio-config-claim

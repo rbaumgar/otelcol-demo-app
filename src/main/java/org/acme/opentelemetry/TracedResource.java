@@ -3,14 +3,14 @@ package org.acme.opentelemetry;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
@@ -68,6 +68,7 @@ public class TracedResource {
         URL myURL = null;
         try {
             myURL = new URL(serviceName);
+            
         } catch (MalformedURLException e) {
             // Auto-generated catch block
             e.printStackTrace();
@@ -131,5 +132,23 @@ public class TracedResource {
                 .baseUri(uriInfo.getBaseUri())
                 .build(ResourceClient.class);
         return "chain -> " + resourceClient.hello("test");
+    }
+
+    @GET
+    @Path("2xx")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String simulate2xxResponse() {
+        Log.info("2xx received");
+        return "Got 2xx Response";
+    }
+    
+    @GET
+    @Path("5xx")
+    @Produces(MediaType.TEXT_PLAIN)
+	public String simulate5xxResponse() throws Exception {
+        Log.info("5xx received");
+
+        // create error 500
+        throw new Exception("Exception message");
     }
 }

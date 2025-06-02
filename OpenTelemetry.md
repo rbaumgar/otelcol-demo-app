@@ -36,11 +36,11 @@ OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.
 
 **Jaeger** is a tool to monitor and troubleshoot transactions in complex distributed systems.
 
-In the the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
+In the following diagram I will show you how the flow will be between your application, OpenTelemetry and Jaeger.
 
 ![Flow)](images/OpenTelemetryCollector.png)
 
-To make the demo simpler I am using the AllInOne  image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
+To make the demo simpler I am using the AllInOne image from Jaeger. This will install collector, query and Jaeger UI in a single pod, using in-memory storage by default.
 
 More details can be found
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
@@ -50,13 +50,13 @@ More details can be found
 
 A cluster administrator has to enable the Distributed Tracing Platform operator once. 
 
-As of OpenShift 4.11, this is be done easily done by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.11/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-jaeger-operator-install_install-distributed-tracing).
+As of OpenShift 4.11, this is be done easily by using the OperatorHub on the OpenShift console. See [Installing the Red Hat OpenShift distributed tracing platform Operator](https://docs.openshift.com/container-platform/4.11/distr_tracing/distr_tracing_install/distr-tracing-installing.html#distr-tracing-jaeger-operator-install_install-distributed-tracing).
 
 In the current version (Jaeger 1.35+) the Red Hat OpenShift distributed tracing data collection Operator is no longer required. Jaeger has a collector port available.
 
 ![operatorhub.png)](images/operatorhub.png)
 
-In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no perstistence.
+In this demo we do not install the OpenShift Elasticsearch Operator, because we use only in-memory tracing - no persistence.
 
 Make sure you are logged in as cluster-admin:
 

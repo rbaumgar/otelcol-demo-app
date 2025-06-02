@@ -81,13 +81,14 @@ $ oc port-forward svc/my-jaeger-collector 4317:4317
 # Build an image with Podman
 
 ```shell
-$ mvn clean package -DskipTests
+$ mvn clean package
 ...
 $ podman build -f src/main/docker/Dockerfile.jvm -t quay.io/rbaumgar/otelcol-demo-app-jvm .
 STEP 1/8: FROM registry.access.redhat.com/ubi8/openjdk-11-runtime
 ...
 Successfully tagged quay.io/rbaumgar/otelcol-demo-app-jvm:latest
 8f9e14fd9336b488c27c5b3dfc4dbd41222089b54824137d3cdc6f67aac66565
+$ podman push quay.io/rbaumgar/otelcol-demo-app-jvm
 ```
 
 You can also use *docker*.
@@ -97,13 +98,13 @@ You can also use *docker*.
 You need to install Graal VM and set the correct pointer.
 
 ```shell
-$ export GRAALVM_HOME=~/graalvm-ce-java11-21.3.0/
-$ export JAVA_HOME=$GRAALVM_HOME
-$ mvn package -Pnative -DskipTests -Dquarkus.native.container-runtime=podman 
+$ mvn package -Pnative
 $ podman build -f src/main/docker/Dockerfile.native -t  quay.io/rbaumgar/otelcol-demo-app-native .
-$ ls file target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
+$ ls file target/opentelemetry-quickstart-1.0.1-SNAPSHOT-runner
 
-$ target/opentelemetry-quickstart-1.0.0-SNAPSHOT-runner
+$ target/opentelemetry-quickstart-1.0.1-SNAPSHOT-runner
+
+$ podman push quay.io/rbaumgar/otelcol-demo-app-native
 ```
 
 
