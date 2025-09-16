@@ -206,6 +206,7 @@ $ oc get tempostacks.tempo.grafana.com -o json sample|jq .status.components
 
 
 ```shell
+$ cat <<EOF |oc apply -f -
 kind: OpenTelemetryCollector
 apiVersion: opentelemetry.io/v1beta1
 metadata:
@@ -254,7 +255,7 @@ spec:
           processors: []
           receivers: 
             - otlp
-EOF            
+EOF
 ```
 
 Creates the ServiceMonitor custom resource to enable scraping of the Prometheus exporter.
