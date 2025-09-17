@@ -1,4 +1,4 @@
-# Using OpenTelemetry and Grafana Tempo with Your Own Services/Application
+# Using OpenTelemetry and Distributed Traing with Your Own Services/Application
 
 ![](images/monitor.jpg)
 
@@ -139,7 +139,7 @@ Using project "tempo-demo".
 ## Create Minio secret
 
 ```shell
-cat <<EOF |oc apply -f -
+$ cat <<EOF |oc apply -f -
 apiVersion: v1
 kind: Secret
 metadata:
@@ -191,6 +191,7 @@ endpoint: <service>.<namespace>.svc:9000
 Networkpolicy
 
 ```shell
+$ cat <<EOF |oc apply -f -
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -207,7 +208,8 @@ spec:
           kubernetes.io/metadata.name: tempo-demo
       ports:
         - port: 9000
-EOF                  
+EOF
+networkpolicy.networking.k8s.io/allow-from-tempo-demo created
 ```
 
 ## Create TempoStack
@@ -241,12 +243,14 @@ spec:
       enabled: true
     queryFrontend:
       jaegerQuery:
-        enabled: true 
+        enabled: false
         monitorTab:
           enabled: true 
           prometheusEndpoint: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
 EOF
 ```
+
+!!! resources can be removed if you don't want to set limits.
 
 ## Check running pods
 
@@ -578,13 +582,24 @@ You may need to add an environment variable with the name OTELCOL_SERVER to spec
 ### Test Sample Application
 
 Check the router URL with */hello* and see the hello message with the pod name. Do this multiple times.
-Go to the Grafana Cloud URL.
-Launch Grafana.
-Click on Explore. 
-Select Query type Search and Run Query.
+
+```shell
+$ export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
+$ curl $URL/hello
+hello 
+$ curl $URL/sayHello/demo1
+hello: demo1
+$ curl $URL/sayRemote/demo2
+hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
+$ curl $URL/prime/2791
+2791 is a prime.
+...
+```
+Go to the Trace view Observe/Traces.
+Select Tempo Instance: tempo-demo / simplest, Tenant: Dev.
 Find Traces...
 
-![Tempo Result](images/Tempo01.png)
+![Tempo Result](images/Trace02.png)
 
 You can select some details on the query. e.g.
 
@@ -594,7 +609,7 @@ You can select some details on the query. e.g.
 
 Open one trace entry and expand it to get all the details.
 
-![Tempo Trace](images/Tempo02.png)
+![Tempo Trace](images/Trace03.png)
 
 Done!
 
@@ -602,6 +617,11 @@ If you want more details on how the OpenTelemetry is done in Quarkus go to the G
 
 ## Jaeger UI
 
+when
+      jaegerQuery:
+        enabled: false
+
+        
 https://tempo-simplest-gateway-tempo-demo.apps.ocp4.openshift.freeddns.org/
 
 Login with SSO

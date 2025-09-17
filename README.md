@@ -1,5 +1,6 @@
 In this project you will  find two interesting guides:
 
+- [Using OpenTelemetry and Distributed Tracing with Your Application](OpenTelemetry_with_DistributedTracing.md)
 - [Using OpenTelemetry and Jaeger with Your Application](OpenTelemetry.md)
 - [Using OpenTelemetry and Grafana Tempo with Your Services/Application](OpenTelemetry_with_Tempo.md)
 - [Service Performance Monitoring (SPM) with Jaeger of your Application](ServicePerformanceMonitoring.md)

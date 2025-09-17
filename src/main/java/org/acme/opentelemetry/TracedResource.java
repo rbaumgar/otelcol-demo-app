@@ -1,8 +1,5 @@
 package org.acme.opentelemetry;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -11,6 +8,11 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Request;
 import jakarta.ws.rs.core.UriInfo;
+
+//import java.net.MalformedURLException;
+//import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 
@@ -61,10 +63,21 @@ public class TracedResource {
             serviceName = uriInfo.getBaseUri().toString();
         }
         
-        Log.info("Uri: " + uriInfo.getBaseUri());
-        uriInfo.getRequestUri().getHost();
-                
-        //Log.info(serviceName);
+        //Log.info("Uri: " + uriInfo.getBaseUri());
+        //uriInfo.getRequestUri().getHost();
+
+        Log.info("SERVICE_NAME: " + serviceName);
+        URI myURI = null;
+        try {
+            myURI = new URI(serviceName);
+            
+        } catch (URISyntaxException e) {
+            // Auto-generated catch block
+            e.printStackTrace();
+        }
+
+/*                
+        Log.info("SERVICE_NAME: " + serviceName);
         URL myURL = null;
         try {
             myURL = new URL(serviceName);
@@ -73,10 +86,11 @@ public class TracedResource {
             // Auto-generated catch block
             e.printStackTrace();
         }
-
+*/
         ResourceClient resourceClient = RestClientBuilder.newBuilder()
-                .baseUrl(myURL)
+                //.baseUrl(myURL)
                 //.baseUri(uriInfo.getBaseUri())
+                .baseUri(myURI)
                 .build(ResourceClient.class);
 
         String response;

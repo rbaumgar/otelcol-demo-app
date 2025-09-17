@@ -46,4 +46,21 @@ public class TracedResourceTest {
                 .body(is("chain -> hello: test"));
     }
 
+    @Test
+    public void primeEndpoint() {
+        given()
+                .when().get("/prime/2791")
+                .then()
+                .statusCode(200)
+                .body(is("2791 is a prime."));
+    }
+
+    @Test
+    public void noprimeEndpoint() {
+        given()
+                .when().get("/prime/121")
+                .then()
+                .statusCode(200)
+                .body(is("121 is not a prime, is divisible by 11."));
+    }
 }

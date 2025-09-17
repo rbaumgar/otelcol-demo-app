@@ -6,6 +6,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 
 import io.opentelemetry.api.trace.Span;
+import io.quarkus.logging.Log;
 
 @Path("/prime")
 public class PrimeNumberChecker {
@@ -27,27 +28,33 @@ public class PrimeNumberChecker {
         span.setAttribute("isPrime", false);
 
         if (number < 1) {
+            Log.info("Only natural numbers can be prime numbers.");
             return "Only natural numbers can be prime numbers.";
         }
         if (number == 1) {
-            return "1 is not prime.";
+            Log.info("1 is not a prime.");
+            return "1 is not a prime.";
         }
         if (number == 2) {
-                    return "2 is prime.";
+            Log.info("2 is a prime.");
+            return "2 is a prime.";
         }
         if (number % 2 == 0) {
-            return number + " is not prime, it is divisible by 2.";
+            Log.info(number + " is not a prime, it is divisible by 2.");
+            return number + " is not a prime, it is divisible by 2.";
         }
         for (int i = 3; i < Math.floor(Math.sqrt(number)) + 1; i = i + 2) {
             if (number % i == 0) {
-                return number + " is not prime, is divisible by " + i + ".";
+                Log.info(number + " is not a prime, is divisible by " + i + ".");
+                return number + " is not a prime, is divisible by " + i + ".";
             }
         }
         if (number > highestPrimeNumberSoFar) {
             highestPrimeNumberSoFar = number;
         }
         span.setAttribute("isPrime", true);
-        return number + " is prime.\n";
+        Log.info(number + " is a prime.");
+        return number + " is a prime.";
     }
 
     // @Gauge(name = "highestPrimeNumberSoFar", unit = MetricUnits.NONE, description = "Highest prime number so far.")
