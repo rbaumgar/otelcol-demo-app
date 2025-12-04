@@ -56,12 +56,21 @@ and from another window
 ```shell
 $ curl localhost:8080/hello
 hello
+$ curl localhost:8080/hello/demo1
+hello:demo1
 $ curl localhost:8080/sayHello/demo1
 hello: demo1
 $ curl localhost:8080/sayRemote/demo1
 hello: demo1 from http://localhost:8080/
 $ curl localhost:8080/prime/2797
 2797 is prime.
+$ curl localhost:8080/2xx
+Got 2xx Response
+$ curl localhost:8080/5xx
+500 - Internal Server Error
+...
+$ curl -X POST localhost:8080/alert-hook -H 'content-type: application/json' -d '{ "records": [ {"key": "key-1","value": "sales-lead-0003"}, {"key": "key-2","value": "sales-lead-0003"} ] }'
+OK
 ```
 
 # Using OpenTelemetryCollector or Jaeger 1.35+

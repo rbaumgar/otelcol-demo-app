@@ -18,11 +18,13 @@ Using distributed tracing lets you perform the following functions:
 - Optimize performance and latency
 - Perform root cause analysis
 
-I am using Red Hat OpenShift distributed tracing data collection - This component is based on the open source OpenTelemetry project.
+This document is based on OpenShift 4.19. 
+See [Red Hat build of OpenTelemetry](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/red_hat_build_of_opentelemetry/)
+See [Distributed tracing release notes](https://docs.redhat.com/en/documentation/openshift_container_platform/4.19/html/distributed_tracing/).
 
-This document is based on OpenShift 4.12. See [Distributed tracing release notes](https://docs.openshift.com/container-platform/4.12/distr_tracing/distributed-tracing-release-notes.html).
+Red Hat build of OpenTelemetry 3.8 is provided through the Red Hat build of OpenTelemetry Operator 0.140.0 and based on the open source OpenTelemetry release 0.140.0.
 
-OpenShift distributed tracing data collection Operator based on OpenTelemetry 0.63.1
+Distributed Tracing Platform 3.8 is provided through the Tempo Operator 0.19.0 and based on the open source Grafana Tempo 2.9.0.
 
 ## OpenTelemetry and Grafana Tempo
 
@@ -40,20 +42,6 @@ More details can be found
 
 - [OpenTelemetry Reference Architecture](https://opentelemetry.io/docs/)
 - [Grafana Cloud](https://grafana.com/products/cloud/)
-
-## Create Grafana Cloud User
-
-For using the Grafana Cloud you can create a free user. This ** Free Forever Cloud** user is limited. But for test and demo purposes this is fine. Also, I do not have any internal data so I can use the cloud.
-
-[Registration](https://grafana.com/auth/sign-up/create-user?pg=prod-cloud)
-
-After successful registration, you need to go to the details of Tempo and store the URL, the user, and the generated API Key.
-
-```shell
-$ export TEMPO_URL=tempo-prod-08-prod-eu-west-3.grafana.net:443
-$ export TEMPO_USER=101234
-$ export TEMPO_APIKEY=USghh4VZFSFxFsrDicgXK53q95KESubjRyXhzzQfGAoGUX3DZdXAuVZfAsU9T8shk=
-```
 
 ## Enabling Red Hat build of OpenTelemetry
 
@@ -139,6 +127,7 @@ Using project "tempo-demo".
 ## Create Minio secret
 
 ```shell
+$ export TEMPO_DEMO_SECRET=$(tr -dc 'A-Za-z0-9!?%=' < /dev/urandom | head -c 12)
 $ cat <<EOF |oc apply -f -
 apiVersion: v1
 kind: Secret
@@ -147,15 +136,22 @@ metadata:
 stringData:
   endpoint: http://minio.minio.svc:9000
   bucket: tempo-demo
-  access_key_id: tempo
-  access_key_secret: <secret>
+  access_key_id: tempo-demo
+  access_key_secret: ${TEMPO_DEMO_SECRET}
 type: Opaque
 EOF
 ```
 
+## Change to Minio project
+
+```shell
+$ oc project minio
+```
+
 ## Create access to minio bucket
 
-cat > tempo-demo-access-policy.json <<EOF
+```shell
+$ cat > tempo-demo-access-policy.json <<EOF
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -168,11 +164,13 @@ cat > tempo-demo-access-policy.json <<EOF
     ]
 }
 EOF
+```
 
 # copy policy file to pod
-$ cat minio/openshift-logging-access-policy.json | \
+$ cat tempo-demo-access-policy.json | \
   oc -n minio exec deployments/minio-server -i -- sh -c "cat /dev/stdin > /tmp/tempo-demo-access-policy.json"
-$ oc rsh -n minio rsh deployments/minio-server
+$ rm tempo-demo-access-policy.json
+$ oc rsh -n minio deployments/minio-server
 
 # create an alias for the connection
 mc alias set myminio http://localhost:9000 minio $MINIO_ADMIN_PWD
@@ -186,9 +184,10 @@ mc admin user add myminio tempo-demo $TEMPO_DEMO_SECRET
 mc admin policy attach myminio tempo-demo-access-policy --user tempo-demo
 exit
 
-endpoint: <service>.<namespace>.svc:9000
 
-Networkpolicy
+## create a Networkpolicy
+
+If NetworkPolicies are used make sure that the newly created project can access Minio.
 
 ```shell
 $ cat <<EOF |oc apply -f -
@@ -210,6 +209,12 @@ spec:
         - port: 9000
 EOF
 networkpolicy.networking.k8s.io/allow-from-tempo-demo created
+```
+
+## Go back to the project
+
+```shell
+$ oc project tempo-demo
 ```
 
 ## Create TempoStack
@@ -243,7 +248,7 @@ spec:
       enabled: true
     queryFrontend:
       jaegerQuery:
-        enabled: false
+        enabled: true
         monitorTab:
           enabled: true 
           prometheusEndpoint: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
@@ -256,7 +261,6 @@ EOF
 
 ```shell
 $ oc get pod
-NAME                                           READY   STATUS    RESTARTS      AGE
 NAME                                             READY   STATUS    RESTARTS   AGE
 tempo-simplest-compactor-cbdc5b8f4-mk6xb         1/1     Running   0          49m
 tempo-simplest-distributor-6dfb99697f-ltth5      1/1     Running   0          77m
@@ -265,7 +269,7 @@ tempo-simplest-ingester-0                        1/1     Running   0          49
 tempo-simplest-querier-85746fdf85-nv56z          1/1     Running   0          49m
 tempo-simplest-query-frontend-655d6785bf-fbpdn   3/3     Running   0          49m
 
-$ oc get tempostack.tempo.grafana.com -o json simplest | jq .status.components
+$ oc get tempostacks -o json simplest | jq .status.components
 {
   "compactor": {
     "Running": [
@@ -300,7 +304,46 @@ $ oc get tempostack.tempo.grafana.com -o json simplest | jq .status.components
 }
 ```
 
+## create a Networkpolicy for Distributed tracing
+
+If NetworkPolicies are used make sure that the newly created project can access Minio.
+
+```shell
+$ cat <<EOF |oc apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-distributed-tracing
+  namespace: tempo-demo
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: gateway
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: openshift-cluster-observability-operator
+      ports:
+        - port: 8080
+EOF
+networkpolicy.networking.k8s.io/allow-from-distributed-tracing created
+```
+
+## Create SA for otel-collector
+
+```shell
+$ oc apply -f - << EOF
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+EOF
+```
+
 ## Create cluster role for tenant
+
+The next steps has be made a cluster admin.
 
 ```shell
 $ oc apply -f - << EOF
@@ -335,16 +378,6 @@ rules:
 EOF
 ```
 
-## Create SA for otel-collector
-
-```shell
-$ oc apply -f - << EOF
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: otel-collector
-EOF
-```
 ## Grant permission to autheicated user to read traces
 
 ```shell
@@ -363,7 +396,6 @@ subjects:
     name: system:authenticated
 EOF
 ```
-
 
 ## Grant permission to SA
 
@@ -396,13 +428,14 @@ spec:
   type: DistributedTracing
 EOF
 ```
+
 ## Create OpenTelemetry Collector
 
-Create configmap and an OpenTelemetry Collector instance with the name my-otelcol.
+This steps can be made as normal user.
+
+Create OpenTelemetry Collector instance with the name otel.
 
 ```shell
-$ export TEMPO_TOKEN=`echo -n "$TEMPO_USER:$TEMPO_APIKEY" | base64 -w 0`
-$ Export TEMPO_URL=tempo-simplest-distributor:4317
 $ cat <<EOF |oc apply -f -
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
@@ -461,9 +494,15 @@ spec:
           processors: [memory_limiter,batch]
           exporters: [otlp/dev]
 EOF
-        headers:
-          authorization: Basic ${TEMPO_TOKEN}
-opentelemetrycollector.opentelemetry.io/my-otelcol-tempo created
+opentelemetrycollector.opentelemetry.io/otel created
+```
+
+Check the OpenTelemetryCollector instance.
+
+```shell
+$ oc get opentelemetrycollectors 
+NAME   MODE         VERSION   READY   AGE   IMAGE                                                                                                                             MANAGEMENT
+otel   deployment   0.140.0   1/1     69m   registry.redhat.io/rhosdt/opentelemetry-collector-rhel8@sha256:adf3760df254b939a476428449b792037f197e64bbea44d39ac7c60661818855   managed
 ```
 
 When the OpenTelemetryCollector instance is up and running you can check log.
@@ -490,6 +529,7 @@ You can update the collector by:
 ```shell
 $ oc edit opentelemetrycollector my-otelcol-tempo
 ```
+
 
 ## Sample Application
 
@@ -595,9 +635,24 @@ $ curl $URL/prime/2791
 2791 is a prime.
 ...
 ```
-Go to the Trace view Observe/Traces.
+
+### Generate Workload
+
+```shell
+export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
+
+for i in {1..30000}; do curl $URL/prime/${RANDOM} >/dev/null 2>&1; sleep .10; done
+
+for i in {1..30000}; do curl $URL/hello >/dev/null 2>&1; sleep .10; done
+```
+
+## Go to the Traces View
+
+Go to the Trace view under Observe/Traces.
+
 Select Tempo Instance: tempo-demo / simplest, Tenant: Dev.
-Find Traces...
+
+Find the Traces...
 
 ![Tempo Result](images/Trace02.png)
 
@@ -619,21 +674,26 @@ If you want more details on how the OpenTelemetry is done in Quarkus go to the G
 
 when
       jaegerQuery:
-        enabled: false
-
+        enabled: true
         
-https://tempo-simplest-gateway-tempo-demo.apps.ocp4.openshift.freeddns.org/
+Get the Jaeger URL with
 
-Login with SSO
+```shell
+$ oc get route tempo-simplest-gateway -o jsonpath='{.spec.host}'
+tempo-simplest-gateway-tempo-demo.apps...
+```
+
+Append "/dev" and Login with SSO.
 
 ## Remove this Demo
 
 ```shell
 $ oc delete deployment,svc,route otelcol-demo-app
-$ oc delete opentelemetrycollectors my-otelcol-tempo
+$ oc delete opentelemetrycollectors otel
+$ oc delete tempostacks simplest
 $ oc delete project tempo-demo
 ```
 
 This document: 
 
-**[Github: rbaumgar/otelcol-demo-app](https://github.com/rbaumgar/otelcol-demo-app/blob/master/OpenTelemetry_with_Tempo.md)**
+**[Github: rbaumgar/otelcol-demo-app](https://github.com/rbaumgar/otelcol-demo-app/blob/master/OpenTelemetry_with_DistributedTracing.md)**

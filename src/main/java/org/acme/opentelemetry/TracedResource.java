@@ -1,6 +1,8 @@
 package org.acme.opentelemetry;
 
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
@@ -164,5 +166,13 @@ public class TracedResource {
 
         // create error 500
         throw new Exception("Exception message");
+    }
+
+    @POST
+    @Path("alert-hook")
+    @Consumes(MediaType.APPLICATION_JSON)
+	public String receiveAlertHook(String request) {
+		Log.info("Alert received: " + request);
+        return "OK";
     }
 }
