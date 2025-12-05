@@ -306,7 +306,7 @@ $ oc get tempostacks -o json simplest | jq .status.components
 
 ## create a Networkpolicy for Distributed tracing
 
-If NetworkPolicies are used make sure that the newly created project can access Minio.
+If NetworkPolicies are used make sure that the newly created project can be accessed by the Distributed Tracing UIPlugin.
 
 ```shell
 $ cat <<EOF |oc apply -f -
@@ -416,6 +416,48 @@ subjects:
 EOF
 ```
 
+## Create cluster role for the SA
+
+```shell
+$ cat <<EOF |oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces",]
+  verbs: ["get", "watch", "list"] 
+- apiGroups: ["apps"]
+  resources: ["replicasets"]
+  verbs: ["get", "watch", "list"] 
+- apiGroups: ["config.openshift.io"]
+  resources: ["infrastructures", "infrastructures/status"]
+  verbs: ["get", "watch", "list"]  
+EOF
+clusterrole.rbac.authorization.k8s.io/otel-collector created
+```
+
+## Grant permission to SA
+
+```shell
+$ cat <<EOF |oc apply -f -
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+roleRef:
+  kind: ClusterRole
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: tempo-demo
+EOF
+clusterrolebinding.rbac.authorization.k8s.io/otel-collector created
+```  
+
 ## Create Distributed Tracing Plugin
 
 ```shell
@@ -448,24 +490,30 @@ spec:
     extensions:
       bearertokenauth:
         filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
     receivers:
-      otlp:
-        protocols:
-          grpc: {}
-          http: {}
       jaeger:
         protocols:
           grpc: {}
           thrift_binary: {}
           thrift_compact: {}
           thrift_http: {}
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
       zipkin: {}
+
     processors:
       batch: {}
+      k8sattributes: {}
       memory_limiter:
         check_interval: 1s
         limit_percentage: 50
         spike_limit_percentage: 30
+      resourcedetection:
+        detectors: [openshift]
+
     exporters:
       otlp/dev:
         endpoint: tempo-simplest-gateway.tempo-demo.svc:8090
@@ -485,13 +533,14 @@ spec:
           authenticator: bearertokenauth
         headers:
           X-Scope-OrgID: "dev"
+
     service:
       extensions: [bearertokenauth]
 
       pipelines:
         traces:
           receivers: [otlp]
-          processors: [memory_limiter,batch]
+          processors: [memory_limiter, k8sattributes, resourcedetection, batch]
           exporters: [otlp/dev]
 EOF
 opentelemetrycollector.opentelemetry.io/otel created
