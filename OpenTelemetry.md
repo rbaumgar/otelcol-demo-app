@@ -237,7 +237,7 @@ hello: demo2 from http://otelcol-demo-app-jaeger-demo.apps.rbaumgar.demo.net/
 ...
 ```
 
-Go to Jager URL.
+Go to Jaeger URL.
 Reload by pressing F5.
 Under Service select my-service. 
 Find Traces...

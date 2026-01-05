@@ -378,7 +378,7 @@ rules:
 EOF
 ```
 
-## Grant permission to autheicated user to read traces
+## Grant permission to authenticated user to read traces
 
 ```shell
 $ oc apply -f - << EOF
@@ -517,15 +517,6 @@ spec:
     exporters:
       otlp/dev:
         endpoint: tempo-simplest-gateway.tempo-demo.svc:8090
-        tls:
-          insecure: false
-          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
-        auth:
-          authenticator: bearertokenauth
-        headers:
-          X-Scope-OrgID: "dev"
-      otlphttp/dev:
-        endpoint: https://tempo-simplest-gateway.tempo-demo.svc.cluster.local:8080/api/traces/v1/dev
         tls:
           insecure: false
           ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
@@ -692,6 +683,23 @@ export URL=https://$(oc get route otelcol-demo-app -o jsonpath='{.spec.host}')
 
 for i in {1..30000}; do curl $URL/prime/${RANDOM} >/dev/null 2>&1; sleep .10; done
 
+// generate numbers with up to 7 bytes, endless loop
+while [ true ] ; do
+        BYTES=$(( ( RANDOM % 6 )  + 1 ))
+        NUM=`printf %d 0x$(openssl rand -hex $BYTES)`
+        curl ${URL}/prime/${NUM} >/dev/null 2>&1
+        sleep .1
+done
+
+// generate prime with up to 60 bits, endless loop
+while [ true ] ; do
+        BITS=$(( ( RANDOM % 60 )  + 1 ))
+        NUM=$(openssl prime -generate -bits $BITS)
+        curl ${URL}/prime/${NUM} >/dev/null 2>&1
+        sleep .1
+done
+
+// loop over hello url
 for i in {1..30000}; do curl $URL/hello >/dev/null 2>&1; sleep .10; done
 ```
 

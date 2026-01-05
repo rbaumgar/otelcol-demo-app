@@ -1,0 +1,342 @@
+Implementing observability in a cloud-native environment can feel like assembling a complex puzzle. On Red Hat OpenShift, **OpenTelemetry (OTel)** is the gold standard for collecting traces, metrics, and logs.
+
+This guide will walk you through installing the **Red Hat build of OpenTelemetry** using the Operator—the most efficient way to manage OTel on OpenShift.
+
+---
+
+## Why Use the Operator?
+
+The OpenTelemetry Operator isn't just an installer; it's a management engine. It handles:
+
+* **Lifecycle Management:** Automates updates and configuration of the Collector.
+* **Auto-Instrumentation:** Automatically injects OTel SDKs into your Java, Node.js, Python, or .NET applications without manual code changes.
+* **Sidecar Injection:** Transparently adds Collector sidecars to your pods.
+
+---
+
+## Step 1: Install the OpenTelemetry Operator
+
+The easiest way to get started is via the OpenShift Web Console.
+
+1. Log in to your **OpenShift Web Console** with administrator privileges.
+2. Navigate to **Operators > OperatorHub**.
+3. Search for **"Red Hat build of OpenTelemetry"**.
+4. Click **Install**.
+5. On the installation page:
+* **Update Channel:** Select `stable`.
+* **Installation Mode:** Choose `All namespaces on the cluster`.
+* **Approval Strategy:** `Automatic`.
+6. Click **Install** and wait for the status to show "Succeeded."
+
+> **Tip:** You also need the **cert-manager** Operator installed, as the OpenTelemetry Operator uses it to manage admission webhooks.
+
+---
+
+## Step 2: Create a Collector Instance
+
+Once the Operator is running, you need to deploy an **OpenTelemetryCollector** custom resource (CR). This defines how your data is received and where it is sent.
+
+1. Create a new project: `oc new-project otel-demo`.
+2. Go to **Operators > Installed Operators > Red Hat build of OpenTelemetry**.
+3. Select the **OpenTelemetry Collector** tab and click **Create OpenTelemetryCollector**.
+4. Switch to the **YAML view** and use this basic "Deployment" mode configuration:
+
+```yaml
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+  namespace: otel-demo
+spec:
+  mode: deployment
+  config:
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch: {}
+    exporters:
+      debug:
+        verbosity: detailed
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [debug]
+```
+
+This configuration sets up a Collector that receives data via OTLP and logs it to the console (standard output) for debugging.
+
+---
+
+## Step 3: Auto-Instrumentation (The "Magic" Part)
+
+One of the best features of the OpenShift implementation is **Instrumentation CR**. This allows you to instrument your apps without touching their Dockerfiles.
+
+1. In the same namespace, create an **Instrumentation** resource:
+
+```yaml
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: my-instrumentation
+spec:
+  exporter:
+    endpoint: http://otel-collector:4317
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1"    
+  python:
+    env:
+      - name: OTEL_EXPORTER_OTLP_ENDPOINT
+        value: http://otel-collector:4318 
+```
+
+2. **Activate it:** To instrument a Java application, simply add an annotation to your Deployment’s pod template:
+
+```yaml
+spec:
+  template:
+    metadata:
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "true"
+```
+
+```shell
+oc new-app --name java-demo \
+  -i java:openjdk-17-ubi8 \
+  --context-dir undertow-servlet \
+  https://github.com/jboss-openshift/openshift-quickstarts
+oc expose service/java-demo
+oc patch deployment java-demo --type='json' -p='[{"op": "add", "path": "/spec/template/metadata/annotations", "value": {"instrumentation.opentelemetry.io/inject-java": "true"} }]'
+```
+
+The next time your pod restarts, the Operator will inject the Java agent, and your traces will start flowing to the collector!
+
+---
+
+## (optional) Part 4: Deploy and Instrument an Python App
+
+Now we will deploy a simple Python web server. We will not change the Python code. We will simply add an **annotation** to the deployment YAML.
+
+1.  Create a file named `my-python-app.yaml`. Notice the `annotations` section:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-app
+  namespace: otel-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-app
+  template:
+    metadata:
+      labels:
+        app: python-app
+      annotations:
+        # THIS IS THE KEY LINE
+        instrumentation.opentelemetry.io/inject-python: "true"
+    spec:
+      containers:
+        - name: python-app
+          image: ubi9/python-312-minimal
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              pip install flask
+              cat <<EOF > main.py
+              from flask import Flask
+              app = Flask(__name__)
+              @app.route("/")
+              def hello():
+                  return "Hello OpenTelemetry"
+              if __name__ == "__main__":
+                  app.run(host="0.0.0.0", port=5000)
+              EOF
+              python main.py
+
+          ports:
+            - containerPort: 5000
+```
+
+2.  **Deploy the application:**
+```bash
+oc apply -f my-python-app.yaml
+```
+
+3.  **Wait for the Pod:**
+Watch the pod spin up. You might notice the Operator "mutating" the pod.
+```bash
+oc get pods -n otel-demo
+```
+If you describe the pod (`oc describe pod <pod-name>`), you will see that the OpenTelemetry Operator injected an `initContainer` to copy the agent files and set environment variables automatically.
+
+Now let's generate some traffic and see if "Auto-Instrumentation" actually worked.
+
+4.  **Forward a port to the application:**
+```bash
+oc port-forward deployment/python-app 8080:5000 -n otel-demo
+```
+
+5.  **Generate Traffic:**
+Open a new terminal or browser and hit the endpoint:
+```bash
+curl http://localhost:8080
+```
+
+Do this 2 or 3 times.
+
+---
+
+## Step 5: Verify the Flow
+
+To ensure everything is working:
+
+1. Check the Collector logs:
+```bash
+oc logs deployment/otel-collector -n otel-demo
+```
+
+2. If you see traces or metrics being printed in the logs, your pipeline is active.
+
+---
+
+## Summary Table: Deployment Modes
+
+| Mode | Best For | Pros |
+| --- | --- | --- |
+| **Deployment** | Testing / Gateway | Simple to manage, centralized. |
+| **DaemonSet** | Node-level metrics | Collects logs/metrics from every node. |
+| **Sidecar** | High security/Low latency | Injects the collector directly into the app pod. |
+
+---
+
+### Troubleshooting Tips
+
+If you just want to test if your Collector is working *right now* without a whole microservice architecture, use a simple `curl` loop against the collector's OTLP endpoint:
+
+```bash
+# Send a test span manually via OTLP/HTTP
+curl -X POST http://otel-collector:4318/v1/traces \
+-H "Content-Type: application/json" \
+-d '{"resourceSpans": [{"resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "test-app"}}]}, "scopeSpans": [{"spans": [{"traceId": "4bf92f3577b34da6a3ce929d0e0e4736", "spanId": "00f067aa0ba902b7", "name": "test-span", "kind": 1, "startTimeUnixNano": "1625083652123456789", "endTimeUnixNano": "1625083652223456789"}]}]}]}'
+```
+
+---
+
+## What's Next?
+
+Integrating OpenTelemetry with **Tempo** is the final piece of the observability puzzle on OpenShift. While the `debug` exporter is great for testing, a production setup typically sends traces to a **TempoStack** (the managed Jaeger-replacement for OpenShift).
+
+Here is how to bridge the two.
+
+---
+
+## Prerequisites
+
+Before starting, ensure you have:
+
+1. The **Tempo Operator** installed.
+2. A **TempoStack** instance already running in your cluster.
+3. An object storage secret (like S3 or MinIO) configured for Tempo.
+
+---
+
+## Step 1: Identify your Tempo Endpoint
+
+TempoStack exposes an OTLP (gRPC) endpoint that the Collector needs to target. Usually, the internal service URL follows this pattern:
+`http://<tempostack-name>-distributor.<namespace>.svc:4317`
+
+> **Note:** If you have enabled mTLS or OpenShift's internal authentication (RBAC), you may need to provide a service account token or certificates in the collector config.
+
+---
+
+## Step 2: Update the Collector Configuration
+
+You need to modify your `OpenTelemetryCollector` YAML to replace the `debug` exporter with an `otlp` exporter pointing to Tempo.
+
+1. Navigate to **Operators > Installed Operators > Red Hat build of OpenTelemetry**.
+2. Select your **otel-collector** instance and click **Edit OpenTelemetryCollector**.
+3. Update the YAML to look like this:
+
+```yaml
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: otel
+  namespace: otel-demo
+spec:
+  mode: deployment
+  config:
+    extensions:
+      # create extension
+      bearertokenauth:
+        filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"  
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch:
+        # Batching is critical for performance when sending to Tempo
+        send_batch_size: 1000
+        timeout: 10s
+    exporters:
+      otlp/tempo:
+        # Replace with your actual TempoStack service name and namespace
+        endpoint: "tempo-simplest-gateway.tempo-demo.svc:8090"
+        tls:
+          insecure: false
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+        auth:
+          authenticator: bearertokenauth
+        headers:
+          X-Scope-OrgID: "dev"                               
+    service:
+      # enable extension
+      extensions: [bearertokenauth]    
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [otlp/tempo] # Now sending to Tempo
+```
+
+---
+
+## Step 3: Grant Permissions (If using RBAC)
+
+If your TempoStack is secured (which is the default in many OpenShift environments), your Collector's ServiceAccount needs permission to write to Tempo.
+
+You can create a **ClusterRoleBinding** to allow the `otel-collector` service account to act as a "tempostack-traces-write":
+
+```bash
+oc adm policy add-cluster-role-to-user tempostack-traces-write -z otel-collector
+```
+
+---
+
+## Step 4: Visualize in the OpenShift Console
+
+Once the data is flowing, you can view your traces directly within the OpenShift UI:
+
+1. In the **Administrator** perspective, go to **Observe > Traces**.
+2. Select your **TempoStack** as the data source.
+3. Search for your service name (e.g., your Java or Python app) to see the distributed spans.
+
+---
+
+### Troubleshooting Tips
+
+* **Check Collector Logs:** Run `oc logs deployment/otel-collector` to see if the `otlp/tempo` exporter is throwing "Connection Refused" errors.
+* **Batch Processor:** Always use the `batch` processor when sending to Tempo; it prevents the distributor from being overwhelmed by many small requests.
